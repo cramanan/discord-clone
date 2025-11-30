@@ -56,7 +56,7 @@ func main() {
 		router.POST("/auth/register", auth.Register)
 		router.POST("/auth/login", auth.Login)
 		router.GET("/auth/user", middlewares.AuthMiddleware(), auth.Authenticate)
-
+		router.POST("/auth/logout", auth.Logout)
 		router.POST("/quick/friendship", middlewares.AuthMiddleware(), friendships.Quick)
 
 		fmt.Println("Server is running. Press Ctrl+C to stop.")

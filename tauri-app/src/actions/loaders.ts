@@ -7,8 +7,7 @@ export async function authenticate() {
   try {
     const user: User = UserSchema.parse(await api("/auth/user", "GET"));
     return user;
-  } catch (e) {
-    console.error(e);
+  } catch {
     throw redirect({ to: "/login" });
   }
 }

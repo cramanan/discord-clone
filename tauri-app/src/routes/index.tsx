@@ -9,8 +9,6 @@ import { cn } from "~/lib/utils";
 import { createSignal, For, Match, onMount, Switch } from "solid-js";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { createForm } from "@tanstack/solid-form";
 import z from "zod";
 import { api } from "~/actions/api";
@@ -145,13 +143,7 @@ function RouteComponent() {
   const value = Route.useLoaderData();
 
   const [pageKey, setPageKey] = createSignal<PageKey | "add">("online");
-  onMount(async () => {
-    console.log("Mounting websocket listener");
-    await listen("discord-clone://ws", console.log);
-    console.log("Listener mounted, invoking backend to start ws");
-    await invoke("ws");
-  });
-  console.log("OK");
+
   return (
     <MainSidebar user={value()}>
       <Flex class="h-12 border-b border-b-accent">

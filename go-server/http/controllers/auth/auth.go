@@ -127,3 +127,8 @@ func Authenticate(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, user)
 }
+func Logout(c *gin.Context) {
+	secure := c.Request.TLS != nil
+	c.SetCookie("jwt", "", 0, "/", "", secure, true)
+	c.JSON(http.StatusNoContent, "")
+}
