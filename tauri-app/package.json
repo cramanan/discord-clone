@@ -1,0 +1,42 @@
+{
+  "name": "tauri-app",
+  "version": "0.1.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "tauri": "tauri"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@kobalte/core": "^0.13.11",
+    "@tailwindcss/vite": "^4.1.17",
+    "@tanstack/solid-form": "^1.26.0",
+    "@tanstack/solid-query": "^5.90.13",
+    "@tanstack/solid-router": "^1.139.3",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-fs": "~2.4.4",
+    "@tauri-apps/plugin-http": "~2.5.4",
+    "@tauri-apps/plugin-opener": "^2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-solid": "^0.555.0",
+    "solid-js": "^1.9.3",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.17",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@tanstack/router-plugin": "^1.139.3",
+    "@tanstack/solid-router-devtools": "^1.139.3",
+    "@tauri-apps/cli": "^2",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.3",
+    "vite-plugin-solid": "^2.11.0",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

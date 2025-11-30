@@ -1,0 +1,31 @@
+services:
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      PGPASSWORD: '${PGPASSWORD}'
+      POSTGRES_DB: '${POSTGRES_DB}'
+      POSTGRES_USER: '${POSTGRES_USER}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
+    volumes:
+      - ./docker/postgres_data:/var/lib/postgresql/18/docker:rw
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - postgres-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+        - PGADMIN_DEFAULT_EMAIL=cramananjaonapro@gmail.com
+        - PGADMIN_DEFAULT_PASSWORD=secret-password
+    volumes:
+      - ./docker/pgadmin_data:/var/lib/pgadmin:rw
+    networks:
+    - postgres-network
+    ports:
+    - "127.0.0.1:15432:80"
+    restart: unless-stopped
+
+    
+networks:
+  postgres-network:
