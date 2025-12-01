@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-server/http/controllers/auth"
 	"go-server/http/controllers/friendships"
+	"go-server/http/controllers/user"
 	"go-server/http/middlewares"
 	"go-server/shared"
 	"log"
@@ -58,6 +59,8 @@ func main() {
 		router.GET("/auth/user", middlewares.AuthMiddleware(), auth.Authenticate)
 		router.POST("/auth/logout", auth.Logout)
 		router.POST("/quick/friendship", middlewares.AuthMiddleware(), friendships.Quick)
+
+		router.GET("/user/pending-friend-requests", middlewares.AuthMiddleware(), user.PendingFriendRequests)
 
 		fmt.Println("Server is running. Press Ctrl+C to stop.")
 		// Simulate work

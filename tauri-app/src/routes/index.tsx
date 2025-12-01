@@ -6,14 +6,16 @@ import { User } from "~/types";
 import UsersRound from "lucide-solid/icons/user-round";
 import { Button, buttonVariants } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
-import { createSignal, For, Match, onMount, Switch } from "solid-js";
+import { createSignal, For, Match, Switch } from "solid-js";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import { createForm } from "@tanstack/solid-form";
 import z from "zod";
 import { api } from "~/actions/api";
 import { authenticate } from "~/actions/loaders";
-import MainSidebar from "~/components/layouts/main-sidebar";
+import MainLayout from "~/components/layouts/main-layout";
+import { FriendshipSchema, PageSchema, UserSchema } from "~/types/schemas";
+import { Logo } from "~/components/logo";
 
 export const Route = createFileRoute("/")({
   loader: authenticate,
@@ -23,7 +25,6 @@ export const Route = createFileRoute("/")({
 const pageKeyLabels = {
   online: "En ligne",
   all: "Tous les amis",
-  pending: "En attente",
 };
 
 type PageKey = keyof typeof pageKeyLabels;
@@ -31,27 +32,8 @@ type PageKey = keyof typeof pageKeyLabels;
 function Friends(props: { pageKey: PageKey }) {
   const query = useQuery(() => ({
     queryKey: ["friends"],
-    queryFn: (): User[] => [
-      {
-        uuid: "6255e7c7-111c-4da2-bf8c-f4ce8200254b",
-        name: "John",
-        email: "example@email.com",
-        avatar: "https://github.com/shadcn.png",
-      },
-      {
-        uuid: "4726b70b-755d-47ba-90bd-51220264f089",
-        name: "John",
-        email: "example1@email.com",
-
-        avatar: "https://github.com/shadcn.png",
-      },
-      {
-        uuid: "ac8d0a0c-69d6-4198-9a94-079fec66fea2",
-        name: "John",
-        email: "example2@email.com",
-        avatar: "https://github.com/shadcn.png",
-      },
-    ],
+    queryFn: async () => null,
+    initialData: null,
   }));
 
   return (
@@ -99,7 +81,7 @@ function Add() {
   const mutation = useMutation(() => ({
     mutationKey: ["quick-friendship"],
     mutationFn: async (payload: QuickFriendRequest) =>
-      api("/auth/user", "GET", payload),
+      api("/quick/friendship", "POST", payload),
   }));
   const form = createForm(() => ({
     validators: { onSubmit: QuickFriendRequestSchema },
@@ -139,13 +121,69 @@ function Add() {
   );
 }
 
+const PreloadedFriendshipSchema = PageSchema(
+  FriendshipSchema.extend({ addressee: UserSchema })
+);
+
+function PendingFriendRequests() {
+  const query = useQuery(() => ({
+    queryKey: ["pending-friend-requests"],
+    queryFn: async () => {
+      try {
+        const data = await api("/user/pending-friend-requests", "GET");
+        return PreloadedFriendshipSchema.parse(data);
+      } catch (e) {
+        console.error(e);
+        return null;
+      }
+    },
+    initialData: null,
+  }));
+
+  return (
+    <div class="py-4 px-6">
+      <TextField>
+        <TextFieldInput />
+      </TextField>
+      <div class="py-6 text-sm">En attente — {0}</div>
+      <div>
+        <For each={query.data?.data}>
+          {(friendship) => (
+            <Link
+              to="/discussions/$userUuid"
+              params={{ userUuid: friendship.addresseeUuid }}
+              class="flex gap-2 border-t border-t-accent p-2 hover:bg-accent hover:rounded-md "
+            >
+              <div class="relative">
+                <Avatar class="size-9">
+                  <AvatarImage src={friendship.addressee.avatar ?? ""} />
+                  <AvatarFallback class="p-2">
+                    <Logo />
+                  </AvatarFallback>
+                </Avatar>
+                <span class="absolute size-3 bg-gray-600 bottom-0 right-0 rounded-full border-2 border-background" />
+              </div>
+              <div class="text-sm">
+                <div class="font-semibold">{friendship.addressee.name}</div>
+                <div class="text-muted-foreground ">{"status"}</div>
+              </div>
+            </Link>
+          )}
+        </For>
+      </div>
+    </div>
+  );
+}
+
 function RouteComponent() {
   const value = Route.useLoaderData();
 
-  const [pageKey, setPageKey] = createSignal<PageKey | "add">("online");
+  const [pageKey, setPageKey] = createSignal<PageKey | "pending" | "add">(
+    "online"
+  );
 
   return (
-    <MainSidebar user={value()}>
+    <MainLayout user={value()}>
       <Flex class="h-12 border-b border-b-accent">
         <Flex justifyContent="start" class="px-4 gap-2">
           <Flex justifyContent="start" class="gap-2 items-center w-fit">
@@ -176,19 +214,16 @@ function RouteComponent() {
         </Flex>
       </Flex>
       <Switch>
-        <Match
-          when={
-            pageKey() === "online" ||
-            pageKey() === "all" ||
-            pageKey() === "pending"
-          }
-        >
+        <Match when={pageKey() === "online" || pageKey() === "all"}>
           <Friends pageKey={pageKey() as PageKey} />
+        </Match>
+        <Match when={pageKey() === "pending"}>
+          <PendingFriendRequests />
         </Match>
         <Match when={pageKey() === "add"}>
           <Add />
         </Match>
       </Switch>
-    </MainSidebar>
+    </MainLayout>
   );
 }

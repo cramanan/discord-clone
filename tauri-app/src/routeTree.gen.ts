@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteRouteImport } from './routes/_authed/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedInboxRouteImport } from './routes/_authed/inbox'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthedDiscussionsUserUuidRouteImport } from './routes/_authed/discussions.$userUuid'
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedInboxRoute = AuthedInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthedRouteRoute,
 } as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/register',
@@ -50,12 +56,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/inbox': typeof AuthedInboxRoute
   '/discussions/$userUuid': typeof AuthedDiscussionsUserUuidRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/inbox': typeof AuthedInboxRoute
   '/discussions/$userUuid': typeof AuthedDiscussionsUserUuidRoute
 }
 export interface FileRoutesById {
@@ -65,13 +73,14 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
+  '/_authed/inbox': typeof AuthedInboxRoute
   '/_authed/discussions/$userUuid': typeof AuthedDiscussionsUserUuidRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/discussions/$userUuid'
+  fullPaths: '/' | '/login' | '/register' | '/inbox' | '/discussions/$userUuid'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/discussions/$userUuid'
+  to: '/' | '/login' | '/register' | '/inbox' | '/discussions/$userUuid'
   id:
     | '__root__'
     | '/'
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_auth/login'
     | '/_auth/register'
+    | '/_authed/inbox'
     | '/_authed/discussions/$userUuid'
   fileRoutesById: FileRoutesById
 }
@@ -110,6 +120,13 @@ declare module '@tanstack/solid-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/inbox': {
+      id: '/_authed/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof AuthedInboxRouteImport
+      parentRoute: typeof AuthedRouteRoute
     }
     '/_auth/register': {
       id: '/_auth/register'
@@ -150,10 +167,12 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface AuthedRouteRouteChildren {
+  AuthedInboxRoute: typeof AuthedInboxRoute
   AuthedDiscussionsUserUuidRoute: typeof AuthedDiscussionsUserUuidRoute
 }
 
 const AuthedRouteRouteChildren: AuthedRouteRouteChildren = {
+  AuthedInboxRoute: AuthedInboxRoute,
   AuthedDiscussionsUserUuidRoute: AuthedDiscussionsUserUuidRoute,
 }
 

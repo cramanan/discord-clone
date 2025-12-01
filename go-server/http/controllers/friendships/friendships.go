@@ -16,7 +16,7 @@ type QuickPayload struct {
 }
 
 func Quick(c *gin.Context) {
-	_, err := middlewares.GetAuthedUser(c)
+	requester, err := middlewares.GetAuthedUser(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
@@ -42,7 +42,17 @@ func Quick(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, addressee)
+	friendship := models.Friendship{
+		RequesterUuid: requester.UUID,
+		AddresseeUuid: addressee.UUID,
+		IsPending:     true,
+	}
+	if err = gorm.G[models.Friendship](database).Create(ctx, &friendship); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, friendship)
 }
 
 type PostFrienshipPayload struct {
@@ -74,7 +84,7 @@ func POST(c *gin.Context) {
 	payload := models.Friendship{
 		Id:            0,
 		RequesterUuid: user.UUID,
-		AdresseeUuid:  adressee.UUID,
+		AddresseeUuid: adressee.UUID,
 	}
 
 	if err = gorm.G[models.Friendship](database).Create(ctx, &payload); err != nil {
