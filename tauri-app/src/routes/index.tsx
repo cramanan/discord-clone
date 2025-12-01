@@ -13,7 +13,11 @@ import { createForm } from "@tanstack/solid-form";
 import z from "zod";
 import { api } from "~/actions/api";
 import { authenticate } from "~/actions/loaders";
-import MainLayout from "~/components/layouts/main-layout";
+import {
+  MainLayout,
+  MainLayoutContent,
+  MainLayoutSidebar,
+} from "~/components/layouts/main-layout";
 import { FriendshipSchema, PageSchema, UserSchema } from "~/types/schemas";
 import { Logo } from "~/components/logo";
 
@@ -184,46 +188,49 @@ function RouteComponent() {
 
   return (
     <MainLayout user={value()}>
-      <Flex class="h-12 border-b border-b-accent">
-        <Flex justifyContent="start" class="px-4 gap-2">
-          <Flex justifyContent="start" class="gap-2 items-center w-fit">
-            <UsersRound /> <span>Amis</span>
+      <MainLayoutSidebar>Hello World</MainLayoutSidebar>
+      <MainLayoutContent>
+        <Flex class="h-12 border-b border-b-accent">
+          <Flex justifyContent="start" class="px-4 gap-2">
+            <Flex justifyContent="start" class="gap-2 items-center w-fit">
+              <UsersRound /> <span>Amis</span>
+            </Flex>
+            <Tabs value={pageKey()} onChange={setPageKey} class="w-[400px]">
+              <TabsList class="gap-4 bg-transparent">
+                <TabsTrigger class="data-selected:bg-accent" value="online">
+                  En ligne
+                </TabsTrigger>
+                <TabsTrigger class="data-selected:bg-accent" value="all">
+                  Tous
+                </TabsTrigger>
+                <TabsTrigger class="data-selected:bg-accent" value="pending">
+                  En attente
+                </TabsTrigger>
+                <TabsTrigger
+                  value="add"
+                  class={cn(
+                    buttonVariants({ variant: "default" }),
+                    "h-fit data-selected:bg-primary/20"
+                  )}
+                >
+                  Ajouter
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </Flex>
-          <Tabs value={pageKey()} onChange={setPageKey} class="w-[400px]">
-            <TabsList class="gap-4 bg-transparent">
-              <TabsTrigger class="data-selected:bg-accent" value="online">
-                En ligne
-              </TabsTrigger>
-              <TabsTrigger class="data-selected:bg-accent" value="all">
-                Tous
-              </TabsTrigger>
-              <TabsTrigger class="data-selected:bg-accent" value="pending">
-                En attente
-              </TabsTrigger>
-              <TabsTrigger
-                value="add"
-                class={cn(
-                  buttonVariants({ variant: "default" }),
-                  "h-fit data-selected:bg-primary/20"
-                )}
-              >
-                Ajouter
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
         </Flex>
-      </Flex>
-      <Switch>
-        <Match when={pageKey() === "online" || pageKey() === "all"}>
-          <Friends pageKey={pageKey() as PageKey} />
-        </Match>
-        <Match when={pageKey() === "pending"}>
-          <PendingFriendRequests />
-        </Match>
-        <Match when={pageKey() === "add"}>
-          <Add />
-        </Match>
-      </Switch>
+        <Switch>
+          <Match when={pageKey() === "online" || pageKey() === "all"}>
+            <Friends pageKey={pageKey() as PageKey} />
+          </Match>
+          <Match when={pageKey() === "pending"}>
+            <PendingFriendRequests />
+          </Match>
+          <Match when={pageKey() === "add"}>
+            <Add />
+          </Match>
+        </Switch>
+      </MainLayoutContent>
     </MainLayout>
   );
 }

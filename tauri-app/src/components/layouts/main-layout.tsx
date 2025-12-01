@@ -1,4 +1,14 @@
-import { createSignal, JSX, ParentProps, ResolvedChildren } from "solid-js";
+import {
+  Accessor,
+  children,
+  createContext,
+  createEffect,
+  createSignal,
+  JSX,
+  ParentProps,
+  ResolvedChildren,
+  useContext,
+} from "solid-js";
 import { User } from "~/types";
 import { Link, useNavigate } from "@tanstack/solid-router";
 import { useMutation } from "@tanstack/solid-query";
@@ -23,6 +33,7 @@ import {
 } from "~/components/ui/popover";
 import X from "lucide-solid/icons/x";
 import { Logo } from "~/components/logo";
+import { Portal } from "solid-js/web";
 
 function LogOutModal() {
   const navigate = useNavigate();
@@ -60,7 +71,29 @@ function LogOutModal() {
   );
 }
 
-export default function MainLayout(props: ParentProps & { user: User }) {
+interface MainLayoutContextType {
+  sidebar: Accessor<HTMLDivElement | null>;
+  content: Accessor<HTMLDivElement | null>;
+}
+
+const MainLayoutContext = createContext<MainLayoutContextType>();
+
+function useMainLayoutContext() {
+  const ctx = useContext(MainLayoutContext);
+  if (!ctx)
+    throw new Error(
+      "useMainLayoutContext must be used within a MainLayoutContextProvider."
+    );
+
+  return ctx;
+}
+
+export function MainLayout(props: { user: User } & ParentProps) {
+  const [sidebar, setSidebar] = createSignal<HTMLDivElement | null>(null);
+  const [content, setContent] = createSignal<HTMLDivElement | null>(null);
+
+  createEffect(() => console.log(sidebar(), content()));
+
   return (
     <div class="flex flex-col h-screen">
       <Flex
@@ -99,10 +132,25 @@ export default function MainLayout(props: ParentProps & { user: User }) {
           </Flex>
         </aside>
         <div class="flex-1 flex overflow-auto rounded-xl border-t border-l border-accent bg-background">
-          <div class="bg-sidebar p-2 w-68">{}</div>
-          <main class="w-full">{props.children}</main>
+          <MainLayoutContext.Provider value={{ sidebar, content }}>
+            <div class="bg-sidebar p-2 w-68" ref={setSidebar} />
+            <div class="w-full" ref={setContent} />
+            {void props.children}
+          </MainLayoutContext.Provider>
         </div>
       </div>
     </div>
   );
+}
+
+export function MainLayoutContent(props: ParentProps) {
+  const ctx = useMainLayoutContext();
+  const content = ctx.content();
+  return content && <Portal mount={content} children={props.children} />;
+}
+
+export function MainLayoutSidebar(props: ParentProps) {
+  const ctx = useMainLayoutContext();
+  const sidebar = ctx.sidebar();
+  return sidebar && <Portal mount={sidebar} children={props.children} />;
 }
