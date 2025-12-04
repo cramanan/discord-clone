@@ -3,8 +3,6 @@ import { ComponentProps } from "solid-js";
 export function Logo(props: ComponentProps<"svg">) {
   return (
     <svg
-      width="206"
-      height="auto"
       viewBox="0 0 206 231"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

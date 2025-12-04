@@ -41,7 +41,6 @@ pub async fn api<R: tauri::Runtime>(
     payload: Option<serde_json::Value>,
 ) -> Result<serde_json::Value, AppError> {
     let base = Url::parse(constants::API_URL).map_err(AppError::from)?;
-    println!("{:?}", base.domain());
     let url = base.join(&endpoint).map_err(AppError::from)?;
 
     let jar = Arc::new(reqwest::cookie::Jar::default());

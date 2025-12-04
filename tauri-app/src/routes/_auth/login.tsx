@@ -38,7 +38,7 @@ function RouteComponent() {
     mutationKey: ["login"],
     mutationFn: async (payload: Payload) =>
       await api("/auth/login", "POST", payload),
-    onSuccess: () => navigate({ to: "/" }),
+    onSuccess: () => navigate({ to: "/channels/@me" }),
     onError: (error) => console.log("Login error:", error.message),
   }));
 

@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteRouteImport } from './routes/_authed/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthedInboxRouteImport } from './routes/_authed/inbox'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as AuthedDiscussionsUserUuidRouteImport } from './routes/_authed/discussions.$userUuid'
+import { Route as AuthedChannelsIndexRouteImport } from './routes/_authed/channels/index'
+import { Route as AuthedChannelsIdRouteImport } from './routes/_authed/channels/$id'
+import { Route as AuthedChannelsAtmeRouteRouteImport } from './routes/_authed/channels/@me/route'
+import { Route as AuthedChannelsAtmeIndexRouteImport } from './routes/_authed/channels/@me/index'
+import { Route as AuthedChannelsAtmeUuidRouteImport } from './routes/_authed/channels/@me/$uuid'
 
 const AuthedRouteRoute = AuthedRouteRouteImport.update({
   id: '/_authed',
@@ -30,11 +33,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedInboxRoute = AuthedInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
-  getParentRoute: () => AuthedRouteRoute,
-} as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -45,26 +43,50 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-const AuthedDiscussionsUserUuidRoute =
-  AuthedDiscussionsUserUuidRouteImport.update({
-    id: '/discussions/$userUuid',
-    path: '/discussions/$userUuid',
-    getParentRoute: () => AuthedRouteRoute,
-  } as any)
+const AuthedChannelsIndexRoute = AuthedChannelsIndexRouteImport.update({
+  id: '/channels/',
+  path: '/channels/',
+  getParentRoute: () => AuthedRouteRoute,
+} as any)
+const AuthedChannelsIdRoute = AuthedChannelsIdRouteImport.update({
+  id: '/channels/$id',
+  path: '/channels/$id',
+  getParentRoute: () => AuthedRouteRoute,
+} as any)
+const AuthedChannelsAtmeRouteRoute = AuthedChannelsAtmeRouteRouteImport.update({
+  id: '/channels/@me',
+  path: '/channels/@me',
+  getParentRoute: () => AuthedRouteRoute,
+} as any)
+const AuthedChannelsAtmeIndexRoute = AuthedChannelsAtmeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedChannelsAtmeRouteRoute,
+} as any)
+const AuthedChannelsAtmeUuidRoute = AuthedChannelsAtmeUuidRouteImport.update({
+  id: '/$uuid',
+  path: '/$uuid',
+  getParentRoute: () => AuthedChannelsAtmeRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
-  '/inbox': typeof AuthedInboxRoute
-  '/discussions/$userUuid': typeof AuthedDiscussionsUserUuidRoute
+  '/channels/@me': typeof AuthedChannelsAtmeRouteRouteWithChildren
+  '/channels/$id': typeof AuthedChannelsIdRoute
+  '/channels': typeof AuthedChannelsIndexRoute
+  '/channels/@me/$uuid': typeof AuthedChannelsAtmeUuidRoute
+  '/channels/@me/': typeof AuthedChannelsAtmeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
-  '/inbox': typeof AuthedInboxRoute
-  '/discussions/$userUuid': typeof AuthedDiscussionsUserUuidRoute
+  '/channels/$id': typeof AuthedChannelsIdRoute
+  '/channels': typeof AuthedChannelsIndexRoute
+  '/channels/@me/$uuid': typeof AuthedChannelsAtmeUuidRoute
+  '/channels/@me': typeof AuthedChannelsAtmeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -73,14 +95,32 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
-  '/_authed/inbox': typeof AuthedInboxRoute
-  '/_authed/discussions/$userUuid': typeof AuthedDiscussionsUserUuidRoute
+  '/_authed/channels/@me': typeof AuthedChannelsAtmeRouteRouteWithChildren
+  '/_authed/channels/$id': typeof AuthedChannelsIdRoute
+  '/_authed/channels/': typeof AuthedChannelsIndexRoute
+  '/_authed/channels/@me/$uuid': typeof AuthedChannelsAtmeUuidRoute
+  '/_authed/channels/@me/': typeof AuthedChannelsAtmeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/inbox' | '/discussions/$userUuid'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/channels/@me'
+    | '/channels/$id'
+    | '/channels'
+    | '/channels/@me/$uuid'
+    | '/channels/@me/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/inbox' | '/discussions/$userUuid'
+  to:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/channels/$id'
+    | '/channels'
+    | '/channels/@me/$uuid'
+    | '/channels/@me'
   id:
     | '__root__'
     | '/'
@@ -88,8 +128,11 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_auth/login'
     | '/_auth/register'
-    | '/_authed/inbox'
-    | '/_authed/discussions/$userUuid'
+    | '/_authed/channels/@me'
+    | '/_authed/channels/$id'
+    | '/_authed/channels/'
+    | '/_authed/channels/@me/$uuid'
+    | '/_authed/channels/@me/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -121,13 +164,6 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/inbox': {
-      id: '/_authed/inbox'
-      path: '/inbox'
-      fullPath: '/inbox'
-      preLoaderRoute: typeof AuthedInboxRouteImport
-      parentRoute: typeof AuthedRouteRoute
-    }
     '/_auth/register': {
       id: '/_auth/register'
       path: '/register'
@@ -142,12 +178,40 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_authed/discussions/$userUuid': {
-      id: '/_authed/discussions/$userUuid'
-      path: '/discussions/$userUuid'
-      fullPath: '/discussions/$userUuid'
-      preLoaderRoute: typeof AuthedDiscussionsUserUuidRouteImport
+    '/_authed/channels/': {
+      id: '/_authed/channels/'
+      path: '/channels'
+      fullPath: '/channels'
+      preLoaderRoute: typeof AuthedChannelsIndexRouteImport
       parentRoute: typeof AuthedRouteRoute
+    }
+    '/_authed/channels/$id': {
+      id: '/_authed/channels/$id'
+      path: '/channels/$id'
+      fullPath: '/channels/$id'
+      preLoaderRoute: typeof AuthedChannelsIdRouteImport
+      parentRoute: typeof AuthedRouteRoute
+    }
+    '/_authed/channels/@me': {
+      id: '/_authed/channels/@me'
+      path: '/channels/@me'
+      fullPath: '/channels/@me'
+      preLoaderRoute: typeof AuthedChannelsAtmeRouteRouteImport
+      parentRoute: typeof AuthedRouteRoute
+    }
+    '/_authed/channels/@me/': {
+      id: '/_authed/channels/@me/'
+      path: '/'
+      fullPath: '/channels/@me/'
+      preLoaderRoute: typeof AuthedChannelsAtmeIndexRouteImport
+      parentRoute: typeof AuthedChannelsAtmeRouteRoute
+    }
+    '/_authed/channels/@me/$uuid': {
+      id: '/_authed/channels/@me/$uuid'
+      path: '/$uuid'
+      fullPath: '/channels/@me/$uuid'
+      preLoaderRoute: typeof AuthedChannelsAtmeUuidRouteImport
+      parentRoute: typeof AuthedChannelsAtmeRouteRoute
     }
   }
 }
@@ -166,14 +230,32 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
   AuthRouteRouteChildren,
 )
 
+interface AuthedChannelsAtmeRouteRouteChildren {
+  AuthedChannelsAtmeUuidRoute: typeof AuthedChannelsAtmeUuidRoute
+  AuthedChannelsAtmeIndexRoute: typeof AuthedChannelsAtmeIndexRoute
+}
+
+const AuthedChannelsAtmeRouteRouteChildren: AuthedChannelsAtmeRouteRouteChildren =
+  {
+    AuthedChannelsAtmeUuidRoute: AuthedChannelsAtmeUuidRoute,
+    AuthedChannelsAtmeIndexRoute: AuthedChannelsAtmeIndexRoute,
+  }
+
+const AuthedChannelsAtmeRouteRouteWithChildren =
+  AuthedChannelsAtmeRouteRoute._addFileChildren(
+    AuthedChannelsAtmeRouteRouteChildren,
+  )
+
 interface AuthedRouteRouteChildren {
-  AuthedInboxRoute: typeof AuthedInboxRoute
-  AuthedDiscussionsUserUuidRoute: typeof AuthedDiscussionsUserUuidRoute
+  AuthedChannelsAtmeRouteRoute: typeof AuthedChannelsAtmeRouteRouteWithChildren
+  AuthedChannelsIdRoute: typeof AuthedChannelsIdRoute
+  AuthedChannelsIndexRoute: typeof AuthedChannelsIndexRoute
 }
 
 const AuthedRouteRouteChildren: AuthedRouteRouteChildren = {
-  AuthedInboxRoute: AuthedInboxRoute,
-  AuthedDiscussionsUserUuidRoute: AuthedDiscussionsUserUuidRoute,
+  AuthedChannelsAtmeRouteRoute: AuthedChannelsAtmeRouteRouteWithChildren,
+  AuthedChannelsIdRoute: AuthedChannelsIdRoute,
+  AuthedChannelsIndexRoute: AuthedChannelsIndexRoute,
 }
 
 const AuthedRouteRouteWithChildren = AuthedRouteRoute._addFileChildren(

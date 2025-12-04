@@ -23,7 +23,7 @@ code {
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
+  --popover: var(--card);
   --popover-foreground: oklch(0.141 0.005 285.823);
   --primary: oklch(57.745% 0.20919 273.861);
   --primary-foreground: oklch(0.985 0 0);
@@ -59,7 +59,7 @@ code {
   --foreground: oklch(0.985 0 0);
   --card: #393a41;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.141 0.005 285.823);
+  /* --popover: oklch(0.141 0.005 285.823); */
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(57.745% 0.20919 273.861);
   --primary-foreground: oklch(0.985 0 0);
