@@ -32,7 +32,7 @@ func Register(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	_, err := gorm.G[models.User](db).
-		Where("email = ?", json.Email).
+		Where("email = $1", json.Email).
 		First(ctx)
 
 	if err == nil {
@@ -90,7 +90,7 @@ func Login(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	user, err := gorm.G[models.User](db).
-		Where("email = ?", json.Email).
+		Where("email = $1", json.Email).
 		First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

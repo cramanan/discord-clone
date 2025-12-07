@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-server/http/controllers/auth"
+	"go-server/http/controllers/user"
 	"go-server/http/controllers/users"
 	"go-server/http/middlewares"
 	"go-server/shared"
@@ -58,6 +59,8 @@ func main() {
 		router.POST("/auth/logout", auth.Logout)
 
 		router.GET("/users/:uuid", middlewares.AuthMiddleware(), users.GetUserByUuid)
+
+		router.GET("/@me/chats/:uuid", middlewares.AuthMiddleware(), user.GetUserChatsWithUUID)
 
 		fmt.Println("Server is running. Press Ctrl+C to stop.")
 		router.Run()

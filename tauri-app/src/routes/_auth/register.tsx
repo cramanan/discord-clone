@@ -24,11 +24,17 @@ export const Route = createFileRoute("/_auth/register")({
   component: RouteComponent,
 });
 
-const schema = z.object({
-  name: z.string().trim().nonempty("name cannot be empty"),
-  email: z.email(),
-  password: z.string().trim().nonempty("password cannot be empty"),
-});
+const schema = z
+  .object({
+    name: z.string().trim().nonempty("name cannot be empty"),
+    email: z.email(),
+    password: z.string().trim().nonempty("password cannot be empty"),
+    confirmPassword: z.string().trim().nonempty("password cannot be empty"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type Payload = z.infer<typeof schema>;
 
@@ -48,6 +54,7 @@ function RouteComponent() {
       name: "",
       email: "",
       password: "",
+      confirmPassword: "",
     } satisfies Payload,
     onSubmit: ({ value }) => mutation.mutate(value),
   }));
@@ -134,6 +141,36 @@ function RouteComponent() {
                 }
               >
                 <TextFieldLabel for={field().name}>Password:</TextFieldLabel>
+                <TextFieldInput
+                  id={field().name}
+                  name={field().name}
+                  type="password"
+                  placeholder="**********"
+                />
+                <For each={field().state.meta.errors}>
+                  {(error) => (
+                    <TextFieldErrorMessage>
+                      {error?.message}
+                    </TextFieldErrorMessage>
+                  )}
+                </For>
+              </TextField>
+            )}
+          </form.Field>
+          <form.Field name="confirmPassword">
+            {(field) => (
+              <TextField
+                value={field().state.value}
+                onChange={field().handleChange}
+                validationState={
+                  field().state.meta.isTouched && !field().state.meta.isValid
+                    ? "invalid"
+                    : "valid"
+                }
+              >
+                <TextFieldLabel for={field().name}>
+                  Confirm password:
+                </TextFieldLabel>
                 <TextFieldInput
                   id={field().name}
                   name={field().name}

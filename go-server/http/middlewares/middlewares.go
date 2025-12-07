@@ -42,7 +42,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 		database := shared.Database()
-		user, err := gorm.G[models.User](database).Where("uuid = ?", subject).First(c.Request.Context())
+		user, err := gorm.G[models.User](database).Where("uuid = $1", subject).First(c.Request.Context())
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return

@@ -11,15 +11,17 @@ export const UserSchema = z.object({
   avatar: z.string().nullable(),
 });
 
-export const FriendshipSchema = z.object({
-  id: z.number(),
-  requesterUuid: z.uuid(),
-  addresseeUuid: z.uuid(),
-  isPending: z.boolean(),
-});
-
 export const PageSchema = <T extends z.ZodType>(zodType: T) =>
   z.object({
     data: z.array(zodType),
     total: z.number(),
   });
+
+export const ChatSchema = z.object({
+  id: z.number(),
+  senderUuid: z.uuid(),
+  receiverUuid: z.uuid(),
+  content: z.string(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime().nullable(),
+});

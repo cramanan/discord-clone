@@ -6,20 +6,8 @@ import {
   useContext,
 } from "solid-js";
 import { User } from "~/types";
-import { Link, useNavigate } from "@tanstack/solid-router";
-import { useMutation } from "@tanstack/solid-query";
-import { api } from "~/actions/api";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
+import { Link } from "@tanstack/solid-router";
 import { Button } from "~/components/ui/button";
-import LogOut from "lucide-solid/icons/log-out";
 import Inbox from "lucide-solid/icons/inbox";
 import { Flex } from "~/components/ui/flex";
 import {
@@ -33,7 +21,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Logo } from "~/components/logo";
 import Mic from "lucide-solid/icons/mic";
 import Headset from "lucide-solid/icons/headset";
-import Settings from "lucide-solid/icons/settings";
 import SettingsModal from "../modals/settings-modal";
 
 function InboxModal() {
@@ -103,7 +90,7 @@ export function MainLayout(props: { user: User } & ParentProps) {
                 <Logo class="size-6" />
               </Link>
             </div>
-            <div class="p-2 absolute bottom-0 w-full ">
+            <div class="p-2 absolute bottom-0 w-full">
               <div class="bg-background rounded-lg h-14 p-2 flex items-center">
                 <div class="flex items-center w-full">
                   <Avatar class="size-10">
@@ -141,14 +128,20 @@ export function MainLayout(props: { user: User } & ParentProps) {
   );
 }
 
-export function MainLayoutContent(props: ParentProps) {
-  const ctx = useMainLayoutContext();
-  const content = ctx.content();
-  return content && <Portal mount={content} children={props.children} />;
-}
-
 export function MainLayoutSidebar(props: ParentProps) {
   const ctx = useMainLayoutContext();
   const sidebar = ctx.sidebar();
-  return sidebar && <Portal mount={sidebar} children={props.children} />;
+  return <Portal mount={sidebar!} children={props.children} />;
+}
+
+export function MainLayoutContent(props: ParentProps) {
+  const ctx = useMainLayoutContext();
+  const content = ctx.content();
+  return (
+    <Portal
+      mount={content!}
+      children={props.children}
+      ref={(el) => el.classList.add("size-full")}
+    />
+  );
 }
