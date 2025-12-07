@@ -94,7 +94,7 @@ export function MainLayout(props: { user: User } & ParentProps) {
       </Flex>
       <div class="flex h-full">
         <MainLayoutContext.Provider value={{ sidebar, content }}>
-          <aside class="bg-sidebar w-104 h-full flex relative">
+          <aside class="bg-sidebar w-86 h-full flex relative">
             <div class="h-full w-22 flex flex-col items-center">
               <Link
                 to="/"
@@ -129,7 +129,7 @@ export function MainLayout(props: { user: User } & ParentProps) {
               </div>
             </div>
             <div
-              class="border-l border-t border-accent rounded-l-xl w-full"
+              class="border-l border-t border-accent w-full"
               ref={setSidebar}
             />
           </aside>

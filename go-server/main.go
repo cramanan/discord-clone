@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-server/http/controllers/auth"
+	"go-server/http/controllers/users"
 	"go-server/http/middlewares"
 	"go-server/shared"
 	"log"
@@ -43,7 +44,6 @@ func main() {
 
 	go func() {
 		router := gin.Default()
-		// Default CORS configuration (allows all origins)
 		router.Use(cors.New(cors.Config{
 			AllowAllOrigins:  true,
 			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -57,8 +57,9 @@ func main() {
 		router.GET("/auth/user", middlewares.AuthMiddleware(), auth.Authenticate)
 		router.POST("/auth/logout", auth.Logout)
 
+		router.GET("/users/:uuid", middlewares.AuthMiddleware(), users.GetUserByUuid)
+
 		fmt.Println("Server is running. Press Ctrl+C to stop.")
-		// Simulate work
 		router.Run()
 	}()
 
