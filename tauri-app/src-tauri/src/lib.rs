@@ -8,7 +8,12 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![api::api])
+        .manage(crate::api::AppState::default())
+        .invoke_handler(tauri::generate_handler![
+            api::api,
+            api::websocket,
+            api::ws_send
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

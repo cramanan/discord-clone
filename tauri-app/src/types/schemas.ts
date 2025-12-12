@@ -25,3 +25,8 @@ export const ChatSchema = z.object({
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime().nullable(),
 });
+
+export const EventSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("MESSAGE"), payload: ChatSchema }),
+  z.object({ type: z.literal("OTHER") }),
+]);

@@ -2,6 +2,8 @@ import {
   Accessor,
   createContext,
   createSignal,
+  onCleanup,
+  onMount,
   ParentProps,
   useContext,
 } from "solid-js";
@@ -22,6 +24,8 @@ import { Logo } from "~/components/logo";
 import Mic from "lucide-solid/icons/mic";
 import Headset from "lucide-solid/icons/headset";
 import SettingsModal from "../modals/settings-modal";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 
 function InboxModal() {
   return (
@@ -56,6 +60,18 @@ function useMainLayoutContext() {
 export function MainLayout(props: { user: User } & ParentProps) {
   const [sidebar, setSidebar] = createSignal<HTMLDivElement | null>(null);
   const [content, setContent] = createSignal<HTMLDivElement | null>(null);
+
+  let unlistenFn: UnlistenFn;
+  onMount(async () => {
+    try {
+      await invoke("websocket");
+      unlistenFn = await listen("discord-clone://ws", console.log);
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  onCleanup(() => unlistenFn?.());
 
   return (
     <div class="flex flex-col h-screen">

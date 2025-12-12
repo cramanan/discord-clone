@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/solid-query";
+import { useMutation, useQuery } from "@tanstack/solid-query";
 import { createFileRoute, redirect } from "@tanstack/solid-router";
+import { invoke } from "@tauri-apps/api/core";
 import { createSignal, For } from "solid-js";
 import { api } from "~/actions/api";
 import { Logo } from "~/components/logo";
@@ -36,6 +37,12 @@ function RouteComponent() {
     [loader().receiver, loader().sender].map((user) => [user.uuid, user])
   );
 
+  const mutation = useMutation(() => ({
+    mutationKey: ["send"],
+    mutationFn: async (message: string) => await invoke("ws_send", { message }),
+    onError: console.error,
+  }));
+
   const [message, setMessage] = createSignal("");
 
   return (
@@ -68,9 +75,10 @@ function RouteComponent() {
         <TextFieldTextArea
           class="h-14 pl-16"
           placeholder={`Envoyer un message à ${loader().receiver.name}`}
-          onKeyDown={(e) => {
+          onKeyDown={async (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
+              await mutation.mutateAsync(message());
               setMessage("");
             }
           }}

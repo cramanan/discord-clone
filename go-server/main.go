@@ -5,6 +5,7 @@ import (
 	"go-server/http/controllers/auth"
 	"go-server/http/controllers/user"
 	"go-server/http/controllers/users"
+	"go-server/http/controllers/websocket"
 	"go-server/http/middlewares"
 	"go-server/shared"
 	"log"
@@ -61,6 +62,7 @@ func main() {
 		router.GET("/users/:uuid", middlewares.AuthMiddleware(), users.GetUserByUuid)
 
 		router.GET("/@me/chats/:uuid", middlewares.AuthMiddleware(), user.GetUserChatsWithUUID)
+		router.GET("/ws", middlewares.AuthMiddleware(), websocket.WebSocket)
 
 		fmt.Println("Server is running. Press Ctrl+C to stop.")
 		router.Run()
