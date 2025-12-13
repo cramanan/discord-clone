@@ -93,9 +93,9 @@ impl Default for AppState {
 #[tauri::command]
 pub async fn ws_send(
     state: State<'_, AppState>,
-    message: serde_json::Value,
+    value: serde_json::Value,
 ) -> Result<usize, AppError> {
-    Ok(state.tx.send(message)?)
+    Ok(state.tx.send(value)?)
 }
 
 #[tauri::command]
@@ -123,19 +123,14 @@ pub async fn websocket<R: Runtime>(
     tauri::async_runtime::spawn({
         async move {
             while let Some(message_result) = stream.next().await {
-                match message_result {
-                    Ok(message) => {
-                        if let Ok(payload) =
-                            serde_json::from_slice::<serde_json::Value>(&message.into_data())
-                        {
-                            println!("received: {}", payload);
-                            if let Err(error) = app.emit(event, payload) {
-                                eprintln!("error: {}", error)
-                            }
-                        }
-                    }
-                    Err(e) => eprintln!("WebSocket read error: {}", e),
-                }
+                let message = match message_result {
+                    Ok(message) => message.into_data(),
+                    _ => continue,
+                };
+                let _ = match serde_json::from_slice::<serde_json::Value>(&message) {
+                    Ok(payload) => app.emit(event, payload),
+                    _ => continue,
+                };
             }
         }
     });

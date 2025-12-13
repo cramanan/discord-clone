@@ -2,7 +2,6 @@ import {
   Accessor,
   createContext,
   createSignal,
-  onCleanup,
   onMount,
   ParentProps,
   useContext,
@@ -25,8 +24,6 @@ import Mic from "lucide-solid/icons/mic";
 import Headset from "lucide-solid/icons/headset";
 import SettingsModal from "../modals/settings-modal";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import z from "zod";
 
 function InboxModal() {
   return (
@@ -62,17 +59,7 @@ export function MainLayout(props: { user: User } & ParentProps) {
   const [sidebar, setSidebar] = createSignal<HTMLDivElement | null>(null);
   const [content, setContent] = createSignal<HTMLDivElement | null>(null);
 
-  let unlistenFn: UnlistenFn | undefined;
-  onMount(async () => {
-    try {
-      const event = await invoke("websocket").then(z.string().parse);
-      unlistenFn = await listen(event, console.log);
-    } catch (error) {
-      console.error(error);
-    }
-  });
-
-  onCleanup(() => unlistenFn?.());
+  onMount(() => invoke("websocket").catch(console.error));
 
   return (
     <div class="flex flex-col h-screen">
@@ -96,7 +83,7 @@ export function MainLayout(props: { user: User } & ParentProps) {
           </Button>
         </div>
       </Flex>
-      <div class="flex h-full">
+      <div class="flex flex-1 min-h-0">
         <MainLayoutContext.Provider value={{ sidebar, content }}>
           <aside class="bg-sidebar w-86 h-full flex relative">
             <div class="h-full w-22 flex flex-col items-center">

@@ -6,7 +6,6 @@ import (
 	"go-server/shared"
 	"go-server/types/pagination"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -38,29 +37,14 @@ func GetUserChatsWithUUID(c *gin.Context) {
 		return
 	}
 
-	// chats, err := query.Find(ctx)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
+	chats, err := query.Find(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, pagination.Page[models.Chats]{
-		// Data:  chats,
-		Data: []models.Chats{
-			{
-				ID:           1,
-				SenderUUID:   sender.UUID,
-				ReceiverUUID: receiverUUID,
-				Content:      "Ping",
-				CreatedAt:    time.Now().UTC(),
-			}, {
-				ID:           2,
-				SenderUUID:   receiverUUID,
-				ReceiverUUID: sender.UUID,
-				Content:      "Pong",
-				CreatedAt:    time.Now().Add(time.Minute).UTC(),
-			},
-		},
+		Data:  chats,
 		Total: uint(total),
 	})
 }

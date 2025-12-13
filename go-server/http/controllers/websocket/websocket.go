@@ -1,8 +1,12 @@
 package websocket
 
 import (
+	"encoding/json"
 	"go-server/http/middlewares"
+	"go-server/http/models"
 	"go-server/shared"
+	"go-server/types"
+	"go-server/types/event"
 	"log"
 	"net/http"
 
@@ -11,7 +15,7 @@ import (
 )
 
 func WebSocket(c *gin.Context) {
-	_, err := middlewares.GetAuthedUser(c)
+	sender, err := middlewares.GetAuthedUser(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
@@ -23,32 +27,40 @@ func WebSocket(c *gin.Context) {
 		return
 	}
 
-	sink := make(chan []byte, 256)
+	mutexConn := types.NewMutexConn(conn)
 
 	// Read pump
 	go func(conn *websocket.Conn) {
 		defer conn.Close()
 		for {
-			_, payload, err := conn.ReadMessage()
+			_, payload, err := mutexConn.ReadMessage()
 			if err != nil {
 				log.Println(err.Error())
-				return
+				break
 			}
 
-			log.Println("received", string(payload))
-
-			sink <- []byte("\"Pong\"")
-		}
-	}(conn)
-
-	go func(conn *websocket.Conn) {
-		defer conn.Close()
-		for data := range sink {
-			log.Println("sending:", string(data))
-			if err := conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
+			log.Println("received:", string(payload))
+			var baseEvent event.Event[any]
+			if err = json.Unmarshal(payload, &baseEvent); err != nil {
 				log.Println(err.Error())
-				return
+				continue
+			}
+
+			switch baseEvent.Type {
+			case event.MESSAGE:
+				var messageEvent event.Event[models.Chats]
+				if err = json.Unmarshal(payload, &messageEvent); err != nil {
+					log.Println(err.Error())
+					continue
+				}
+
+				messageEvent.Payload.SenderUUID = sender.UUID
+
+				if err = mutexConn.WriteJSON(messageEvent); err != nil {
+					log.Println(err.Error())
+				}
 			}
 		}
 	}(conn)
+
 }

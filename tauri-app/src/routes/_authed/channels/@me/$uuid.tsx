@@ -1,12 +1,20 @@
-import { useMutation, useQuery } from "@tanstack/solid-query";
+import { createForm } from "@tanstack/solid-form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { createFileRoute, redirect } from "@tanstack/solid-router";
 import { invoke } from "@tauri-apps/api/core";
-import { createSignal, For } from "solid-js";
+import { For, onCleanup, onMount } from "solid-js";
+import z from "zod";
 import { api } from "~/actions/api";
 import { Logo } from "~/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { TextField, TextFieldTextArea } from "~/components/ui/text-field";
-import { ChatSchema, PageSchema, UserSchema } from "~/types/schemas";
+import {
+  ChatSchema,
+  EventSchema,
+  PageSchema,
+  UserSchema,
+} from "~/types/schemas";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 export const Route = createFileRoute("/_authed/channels/@me/$uuid")({
   component: RouteComponent,
@@ -25,13 +33,15 @@ export const Route = createFileRoute("/_authed/channels/@me/$uuid")({
 
 function RouteComponent() {
   const loader = Route.useLoaderData();
+  const queryKey = ["messages", loader().receiver.uuid];
   const query = useQuery(() => ({
-    queryKey: ["messages", loader().receiver.uuid],
-    queryFn: async () =>
-      await api(`/@me/chats/${loader().receiver.uuid}`, "GET").then(
+    queryKey,
+    queryFn: () =>
+      api(`/@me/chats/${loader().receiver.uuid}`, "GET").then(
         PageSchema(ChatSchema).parse
       ),
   }));
+  const queryClient = useQueryClient();
 
   const userByUUID = Object.fromEntries(
     [loader().receiver, loader().sender].map((user) => [user.uuid, user])
@@ -39,11 +49,47 @@ function RouteComponent() {
 
   const mutation = useMutation(() => ({
     mutationKey: ["send"],
-    mutationFn: async (message: string) => await invoke("ws_send", { message }),
+    mutationFn: async (content: string) =>
+      await invoke("ws_send", {
+        value: {
+          type: "MESSAGE",
+          payload: { receiverUuid: loader().receiver.uuid, content },
+        },
+      }),
+    onSuccess: () => form.reset(),
     onError: console.error,
   }));
 
-  const [message, setMessage] = createSignal("");
+  const form = createForm(() => ({
+    validators: {
+      onSubmit: z.object({ content: z.string().trim().nonempty() }),
+    },
+    defaultValues: { content: "" },
+    onSubmit: ({ value }) => mutation.mutate(value.content),
+  }));
+
+  let unlistenFn: UnlistenFn | undefined;
+  onMount(async () => {
+    try {
+      unlistenFn = await listen("discord-clone://ws", ({ payload }) => {
+        const { data, success, error } = EventSchema.safeParse(payload);
+        if (error) console.log(error);
+        if (!success || data.type !== "MESSAGE") return;
+        queryClient.setQueryData<typeof query.data>(queryKey, (previous) => {
+          const prevData = previous?.data ?? [];
+          const prevTotal = previous?.total ?? 0;
+          return {
+            ...previous,
+            data: [data.payload, ...prevData],
+            total: prevTotal + 1,
+          };
+        });
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  });
+  onCleanup(() => unlistenFn?.());
 
   return (
     <div class="border-t border-accent h-full flex flex-col">
@@ -56,7 +102,7 @@ function RouteComponent() {
         </Avatar>
         <span>{loader().receiver.name}</span>
       </div>
-      <div class="flex-1 flex flex-col-reverse px-2">
+      <div class="flex-1 flex flex-col-reverse px-2 overflow-auto">
         <For each={query.data?.data}>
           {(chat) => (
             <div>
@@ -71,19 +117,26 @@ function RouteComponent() {
           )}
         </For>
       </div>
-      <TextField class="p-2" value={message()} onChange={setMessage}>
-        <TextFieldTextArea
-          class="h-14 pl-16"
-          placeholder={`Envoyer un message à ${loader().receiver.name}`}
-          onKeyDown={async (e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              await mutation.mutateAsync(message());
-              setMessage("");
-            }
-          }}
-        />
-      </TextField>
+      <form.Field name="content">
+        {(field) => (
+          <TextField
+            class="p-2"
+            value={field().state.value}
+            onChange={field().handleChange}
+          >
+            <TextFieldTextArea
+              class="h-14 pl-16"
+              placeholder={`Envoyer un message à ${loader().receiver.name}`}
+              onKeyDown={async (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  form.handleSubmit();
+                }
+              }}
+            />
+          </TextField>
+        )}
+      </form.Field>
     </div>
   );
 }
