@@ -26,3 +26,4 @@ tauri-plugin-http = { version = "2", features = ["json", "cookies"] }
 tauri-plugin-fs = "2"
 tokio-tungstenite = "0.28.0"
 futures = "0.3.31"
+tokio = "1.48.0"

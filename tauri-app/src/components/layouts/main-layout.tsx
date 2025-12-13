@@ -24,8 +24,9 @@ import { Logo } from "~/components/logo";
 import Mic from "lucide-solid/icons/mic";
 import Headset from "lucide-solid/icons/headset";
 import SettingsModal from "../modals/settings-modal";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import z from "zod";
 
 function InboxModal() {
   return (
@@ -61,11 +62,11 @@ export function MainLayout(props: { user: User } & ParentProps) {
   const [sidebar, setSidebar] = createSignal<HTMLDivElement | null>(null);
   const [content, setContent] = createSignal<HTMLDivElement | null>(null);
 
-  let unlistenFn: UnlistenFn;
+  let unlistenFn: UnlistenFn | undefined;
   onMount(async () => {
     try {
-      await invoke("websocket");
-      unlistenFn = await listen("discord-clone://ws", console.log);
+      const event = await invoke("websocket").then(z.string().parse);
+      unlistenFn = await listen(event, console.log);
     } catch (error) {
       console.error(error);
     }

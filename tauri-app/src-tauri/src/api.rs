@@ -1,43 +1,33 @@
-use std::{str::FromStr, sync::Arc};
-
-use futures::{SinkExt, StreamExt};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use tauri::{
-    async_runtime::{channel, Mutex, Receiver, Sender},
-    http,
-    webview::Cookie,
-    AppHandle, Emitter, Manager, Runtime, State, Url, Webview,
-};
-use tauri_plugin_http::reqwest;
-use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};
-
 use crate::{constants, errors::AppError};
+use futures::{SinkExt, StreamExt};
+use serde::{Deserialize, Serialize};
+use tauri::{webview::Cookie, AppHandle, Emitter, Runtime, State, Url, Webview};
+use tauri_plugin_http::reqwest;
+use tokio::sync::broadcast;
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 
-#[derive(Debug)]
-pub struct Method(pub http::Method);
-
-impl<'de> Deserialize<'de> for Method {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        // Deserialize string
-        let s = String::deserialize(deserializer)?;
-
-        // Parse into Method
-        http::Method::from_str(&s)
-            .map(Method)
-            .map_err(serde::de::Error::custom)
-    }
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum Method {
+    GET,
+    POST,
+    PUT,
+    DELETE,
+    PATCH,
+    OPTIONS,
 }
 
-impl Serialize for Method {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // Serialize the inner HTTP method as a string
-        serializer.serialize_str(self.0.as_str())
+impl From<Method> for tauri::http::Method {
+    fn from(value: Method) -> Self {
+        use tauri::http::Method as HttpMethod;
+        match value {
+            Method::GET => HttpMethod::GET,
+            Method::POST => HttpMethod::POST,
+            Method::PUT => HttpMethod::PUT,
+            Method::DELETE => HttpMethod::DELETE,
+            Method::PATCH => HttpMethod::PATCH,
+            Method::OPTIONS => HttpMethod::OPTIONS,
+        }
     }
 }
 
@@ -65,7 +55,7 @@ pub async fn api<R: Runtime>(
         .map_err(AppError::from)?;
 
     let response = client
-        .request(method.0, url.clone())
+        .request(method.into(), url.clone())
         .json(&payload)
         .send()
         .await
@@ -90,17 +80,13 @@ pub async fn api<R: Runtime>(
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    tx: Arc<Mutex<Sender<serde_json::Value>>>,
-    rx: Arc<Mutex<Receiver<serde_json::Value>>>,
+    tx: broadcast::Sender<serde_json::Value>,
 }
 
 impl Default for AppState {
     fn default() -> Self {
-        let (tx, rx) = channel(2048);
-        Self {
-            tx: Arc::new(Mutex::new(tx)),
-            rx: Arc::new(Mutex::new(rx)),
-        }
+        let (tx, _) = broadcast::channel(2048);
+        Self { tx }
     }
 }
 
@@ -108,8 +94,8 @@ impl Default for AppState {
 pub async fn ws_send(
     state: State<'_, AppState>,
     message: serde_json::Value,
-) -> Result<(), AppError> {
-    Ok(state.tx.lock().await.send(message).await?)
+) -> Result<usize, AppError> {
+    Ok(state.tx.send(message)?)
 }
 
 #[tauri::command]
@@ -117,7 +103,7 @@ pub async fn websocket<R: Runtime>(
     state: State<'_, AppState>,
     app: AppHandle<R>,
     webview: Webview<R>,
-) -> Result<(), AppError> {
+) -> Result<String, AppError> {
     let mut request = constants::WS_URL.into_client_request()?;
     let cookies_str = webview
         .cookies()?
@@ -130,8 +116,10 @@ pub async fn websocket<R: Runtime>(
 
     let (ws_stream, _) = tokio_tungstenite::connect_async(request).await?;
     let (mut sink, mut stream) = ws_stream.split();
+    let mut rx = state.tx.subscribe();
+    let event = "discord-clone://ws";
 
-    // Read Pump
+    // ---- Read Pump ----
     tauri::async_runtime::spawn({
         async move {
             while let Some(message_result) = stream.next().await {
@@ -141,8 +129,7 @@ pub async fn websocket<R: Runtime>(
                             serde_json::from_slice::<serde_json::Value>(&message.into_data())
                         {
                             println!("received: {}", payload);
-                            if let Err(error) = app.app_handle().emit("discord-clone://ws", payload)
-                            {
+                            if let Err(error) = app.emit(event, payload) {
                                 eprintln!("error: {}", error)
                             }
                         }
@@ -154,19 +141,22 @@ pub async fn websocket<R: Runtime>(
     });
 
     // ---- Write Pump ----
-    let rx = state.rx.clone(); // or better: store receiver outside mutex
-
     tauri::async_runtime::spawn(async move {
-        let mut rx = rx.lock().await;
-        while let Some(msg) = rx.recv().await {
-            println!("sending: {:?}", msg);
+        while let Ok(msg) = rx.recv().await {
+            let bytes = match serde_json::to_vec(&msg) {
+                Ok(b) => b,
+                Err(e) => {
+                    eprintln!("serialize error: {e}");
+                    continue;
+                }
+            };
 
-            if let Err(e) = sink.send(Message::Text(msg.to_string().into())).await {
-                eprintln!("write error: {e}");
-                break; // IMPORTANT
-            }
+            println!("sending: {:?}", bytes);
+            if let Err(e) = sink.send(bytes.into()).await {
+                eprintln!("send error: {e}");
+            };
         }
     });
 
-    Ok(())
+    Ok(event.into())
 }
