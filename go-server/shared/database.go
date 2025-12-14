@@ -3,6 +3,7 @@ package shared
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -25,7 +26,7 @@ func Database() *gorm.DB {
 		log.Fatal("DATABASE_URL is not set")
 	}
 
-	db, err = gorm.Open(postgres.Open(rawURL), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(rawURL), &gorm.Config{NowFunc: func() time.Time { return time.Now().UTC() }})
 	if err != nil {
 		log.Fatal(err)
 	}

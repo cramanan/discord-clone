@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
 	"go-server/http/middlewares"
 	"go-server/http/models"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"gorm.io/gorm"
 )
 
 func WebSocket(c *gin.Context) {
@@ -48,13 +50,17 @@ func WebSocket(c *gin.Context) {
 
 			switch baseEvent.Type {
 			case event.MESSAGE:
-				var messageEvent event.Event[models.Chats]
+				var messageEvent event.Event[models.Chat]
 				if err = json.Unmarshal(payload, &messageEvent); err != nil {
 					log.Println(err.Error())
 					continue
 				}
 
 				messageEvent.Payload.SenderUUID = sender.UUID
+				if err = gorm.G[models.Chat](shared.Database()).Create(context.Background(), &messageEvent.Payload); err != nil {
+					log.Println(err.Error())
+					continue
+				}
 
 				if err = mutexConn.WriteJSON(messageEvent); err != nil {
 					log.Println(err.Error())

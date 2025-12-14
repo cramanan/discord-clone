@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(60) NOT NULL,
     avatar VARCHAR(255),
 
-    created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-    updated_at TIMESTAMP
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE
 );
 
 INSERT INTO users (uuid, name, email, password, avatar, created_at) VALUES ('7f2894a2-038a-4e01-92fd-2f936425c48a', 'aklaussen0', 'mmayze0@google.ca', '$2a$04$f.6DhiLk8XEimY9px9pvzeZ7jc2/TEQ8BKIhvKEkD8jpMqgwVMcQW', 'http://dummyimage.com/213x162.png/dddddd/000000', '2025-08-15T12:52:38Z');

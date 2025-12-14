@@ -104,17 +104,23 @@ function RouteComponent() {
       </div>
       <div class="flex-1 flex flex-col-reverse px-2 overflow-auto">
         <For each={query.data?.data}>
-          {(chat) => (
-            <div>
-              <Avatar>
-                <AvatarImage src={userByUUID[chat.senderUuid].avatar ?? ""} />
-                <AvatarFallback>
-                  <Logo class="size-6" />
-                </AvatarFallback>
-              </Avatar>
-              <p>{chat.content}</p>
-            </div>
-          )}
+          {(chat) => {
+            const sender = userByUUID[chat.senderUuid];
+            return (
+              <div>
+                <div class="flex items-center gap-2">
+                  <Avatar>
+                    <AvatarImage src={sender.avatar ?? ""} />
+                    <AvatarFallback>
+                      <Logo class="size-6" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>{sender.name}</div>
+                </div>
+                <p>{chat.content}</p>
+              </div>
+            );
+          }}
         </For>
       </div>
       <form.Field name="content">

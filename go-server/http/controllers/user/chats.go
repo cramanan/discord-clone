@@ -27,9 +27,9 @@ func GetUserChatsWithUUID(c *gin.Context) {
 
 	database := shared.Database()
 	ctx := c.Request.Context()
-	query := gorm.G[models.Chats](database).
+	query := gorm.G[models.Chat](database).
 		Where("sender_uuid = ? AND receiver_uuid = ?", sender.UUID, receiverUUID).
-		Or("receiver_uuid = ? AND sender_uuid = ?", receiverUUID, sender.UUID)
+		Or("receiver_uuid = ? AND sender_uuid = ?", receiverUUID, sender.UUID).Order("created_at DESC")
 
 	total, err := query.Count(ctx, "*")
 	if err != nil {
@@ -43,7 +43,7 @@ func GetUserChatsWithUUID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, pagination.Page[models.Chats]{
+	c.JSON(http.StatusOK, pagination.Page[models.Chat]{
 		Data:  chats,
 		Total: uint(total),
 	})
