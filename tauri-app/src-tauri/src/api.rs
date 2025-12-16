@@ -1,9 +1,11 @@
 use crate::{constants, errors::AppError};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use tauri::{webview::Cookie, AppHandle, Emitter, Runtime, State, Url, Webview};
+use tauri::{
+    async_runtime::JoinHandle, webview::Cookie, AppHandle, Emitter, Runtime, State, Url, Webview,
+};
 use tauri_plugin_http::reqwest;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, Mutex};
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,8 +40,8 @@ pub async fn api<R: Runtime>(
     method: Method,
     payload: Option<serde_json::Value>,
 ) -> Result<serde_json::Value, AppError> {
-    let base = Url::parse(constants::API_URL).map_err(AppError::from)?;
-    let url = base.join(&endpoint).map_err(AppError::from)?;
+    let base = Url::parse(constants::API_URL)?;
+    let url = base.join(&endpoint)?;
 
     let jar = std::sync::Arc::new(reqwest::cookie::Jar::default());
 
@@ -51,15 +53,13 @@ pub async fn api<R: Runtime>(
 
     let client = reqwest::Client::builder()
         .cookie_provider(jar.clone())
-        .build()
-        .map_err(AppError::from)?;
+        .build()?;
 
     let response = client
         .request(method.into(), url.clone())
         .json(&payload)
         .send()
-        .await
-        .map_err(AppError::from)?;
+        .await?;
 
     for cookie in response.cookies() {
         let webview_cookie = Cookie::build((cookie.name(), cookie.value()))
@@ -78,81 +78,81 @@ pub async fn api<R: Runtime>(
     response.json().await.map_err(AppError::from)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AppState {
     tx: broadcast::Sender<serde_json::Value>,
+    write_task: Option<JoinHandle<()>>,
+    read_task: Option<JoinHandle<()>>,
 }
 
 impl Default for AppState {
     fn default() -> Self {
         let (tx, _) = broadcast::channel(2048);
-        Self { tx }
+        Self {
+            tx,
+            write_task: None,
+            read_task: None,
+        }
     }
 }
 
 #[tauri::command]
 pub async fn ws_send(
-    state: State<'_, AppState>,
+    state: State<'_, Mutex<AppState>>,
     value: serde_json::Value,
 ) -> Result<usize, AppError> {
-    Ok(state.tx.send(value)?)
+    Ok(state.lock().await.tx.send(value)?)
 }
 
 #[tauri::command]
 pub async fn websocket<R: Runtime>(
-    state: State<'_, AppState>,
+    state: State<'_, Mutex<AppState>>,
     app: AppHandle<R>,
     webview: Webview<R>,
 ) -> Result<String, AppError> {
-    let mut request = constants::WS_URL.into_client_request()?;
-    let cookies_str = webview
-        .cookies()?
-        .iter()
-        .map(|cookie| format!("{}={}", cookie.name(), cookie.value()))
-        .collect::<Vec<_>>()
-        .join(";");
+    let (mut sink, mut stream) = {
+        let mut request = constants::WS_URL.into_client_request()?;
+        let cookies_str = webview
+            .cookies()?
+            .iter()
+            .map(|cookie| format!("{}={}", cookie.name(), cookie.value()))
+            .collect::<Vec<_>>()
+            .join(";");
+        request.headers_mut().append("Cookie", cookies_str.parse()?);
+        let (ws_stream, _) = tokio_tungstenite::connect_async(request).await?;
+        ws_stream.split()
+    };
 
-    request.headers_mut().append("Cookie", cookies_str.parse()?);
+    let mut state = state.lock().await;
 
-    let (ws_stream, _) = tokio_tungstenite::connect_async(request).await?;
-    let (mut sink, mut stream) = ws_stream.split();
-    println!("{}", state.tx.receiver_count());
-    let mut rx = state.tx.subscribe();
-    let event = "discord-clone://ws";
+    // ---- Stop previous tasks ----
+    if let Some(task) = state.read_task.take() {
+        task.abort()
+    }
+
+    if let Some(task) = state.write_task.take() {
+        task.abort()
+    }
 
     // ---- Read Pump ----
-    tauri::async_runtime::spawn({
-        async move {
-            while let Some(message_result) = stream.next().await {
-                let message = match message_result {
-                    Ok(message) => message.into_data(),
-                    _ => continue,
-                };
-                let _ = match serde_json::from_slice::<serde_json::Value>(&message) {
-                    Ok(payload) => app.emit(event, payload),
-                    _ => continue,
-                };
+    let event = "discord-clone://ws";
+    state.read_task = Some(tauri::async_runtime::spawn(async move {
+        while let Some(Ok(msg)) = stream.next().await {
+            if let Ok(payload) = serde_json::from_slice::<serde_json::Value>(&msg.into_data()) {
+                let _ = app.emit("discord-clone://ws", payload);
             }
         }
-    });
+    }));
 
     // ---- Write Pump ----
-    tauri::async_runtime::spawn(async move {
+    let mut rx = state.tx.subscribe();
+    state.write_task = Some(tauri::async_runtime::spawn(async move {
         while let Ok(msg) = rx.recv().await {
-            let bytes = match serde_json::to_vec(&msg) {
-                Ok(b) => b,
-                Err(e) => {
-                    eprintln!("serialize error: {e}");
-                    continue;
-                }
-            };
-
-            println!("sending: {:?}", bytes);
-            if let Err(e) = sink.send(bytes.into()).await {
-                eprintln!("send error: {e}");
-            };
+            if let Ok(bytes) = serde_json::to_vec(&msg) {
+                let _ = sink.send(bytes.into()).await;
+            }
         }
-    });
+    }));
 
     Ok(event.into())
 }

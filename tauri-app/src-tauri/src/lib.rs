@@ -8,7 +8,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
-        .manage(crate::api::AppState::default())
+        .manage(tokio::sync::Mutex::new(crate::api::AppState::default()))
         .invoke_handler(tauri::generate_handler![
             api::api,
             api::websocket,
