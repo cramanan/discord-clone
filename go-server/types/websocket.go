@@ -13,11 +13,11 @@ func NewMutexConn(conn *websocket.Conn) MutexConn { return MutexConn{sync.Mutex{
 func (mutex *MutexConn) WriteJSON(v interface{}) error {
 	mutex.Lock()
 	defer mutex.Unlock()
-	return mutex.data.WriteJSON(v)
+	return mutex.Data.WriteJSON(v)
 }
 
 func (mutex *MutexConn) ReadMessage() (messageType int, p []byte, err error) {
 	mutex.Lock()
 	defer mutex.Unlock()
-	return mutex.data.ReadMessage()
+	return mutex.Data.ReadMessage()
 }

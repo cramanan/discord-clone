@@ -30,6 +30,8 @@ func WebSocket(c *gin.Context) {
 	}
 
 	mutexConn := types.NewMutexConn(conn)
+	hub := shared.Hub()
+	hub.Set(sender.UUID, &mutexConn)
 
 	// Read pump
 	go func(conn *websocket.Conn) {
@@ -62,8 +64,12 @@ func WebSocket(c *gin.Context) {
 					continue
 				}
 
-				if err = mutexConn.WriteJSON(messageEvent); err != nil {
+				if err = hub.
+					Get(messageEvent.Payload.ReceiverUUID).
+					WriteJSON(messageEvent); err != nil {
 					log.Println(err.Error())
+					continue
+
 				}
 			}
 		}

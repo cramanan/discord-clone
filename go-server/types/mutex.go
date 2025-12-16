@@ -4,5 +4,5 @@ import "sync"
 
 type Mutex[T any] struct {
 	sync.Mutex
-	data T
+	Data T
 }
