@@ -116,6 +116,7 @@ pub async fn websocket<R: Runtime>(
 
     let (ws_stream, _) = tokio_tungstenite::connect_async(request).await?;
     let (mut sink, mut stream) = ws_stream.split();
+    println!("{}", state.tx.receiver_count());
     let mut rx = state.tx.subscribe();
     let event = "discord-clone://ws";
 

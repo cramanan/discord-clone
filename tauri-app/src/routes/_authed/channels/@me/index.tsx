@@ -31,7 +31,7 @@ function Online() {
             <Link
               to="/channels/@me/$uuid"
               params={{ uuid: user.uuid }}
-              class="border-t border-accent hover:bg-accent hover:rounded-lg flex items-center gap-2 p-2"
+              class="border-t border-accent hover:bg-border hover:rounded-lg flex items-center gap-2 p-2"
             >
               <Avatar>
                 <AvatarImage src={user.avatar ?? ""} />
@@ -56,12 +56,12 @@ function RouteComponent() {
         <div class="flex items-center gap-2">
           <UserRound class="size-4" /> <span class="text-sm">Amis</span>
         </div>
-        <span class="size-1 bg-accent rounded-full" />
+        <span class="size-1 bg-border rounded-full" />
         <Tabs class="space-x-4" value={page()} onChange={setPage}>
-          <TabsTrigger class="data-selected:bg-accent" value="online">
+          <TabsTrigger class="data-selected:bg-border" value="online">
             En Ligne
           </TabsTrigger>
-          <TabsTrigger class="data-selected:bg-accent" value="all">
+          <TabsTrigger class="data-selected:bg-border" value="all">
             Tous
           </TabsTrigger>
           <TabsTrigger

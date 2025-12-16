@@ -15,6 +15,9 @@ import {
   UserSchema,
 } from "~/types/schemas";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { format, isSameDay } from "date-fns";
+import { Chat, User } from "~/types";
+import { Separator } from "~/components/ui/separator";
 
 export const Route = createFileRoute("/_authed/channels/@me/$uuid")({
   component: RouteComponent,
@@ -31,8 +34,43 @@ export const Route = createFileRoute("/_authed/channels/@me/$uuid")({
   },
 });
 
+function RenderChat(props: {
+  chat: Chat;
+  userByUUID: Record<User["uuid"], User>;
+  hideUser?: boolean;
+}) {
+  if (props.hideUser)
+    return <p class="px-16 hover:bg-border">{props.chat.content}</p>;
+  const sender = props.userByUUID[props.chat.senderUuid];
+  return (
+    <div class="hover:bg-border px-4">
+      <div class="flex items-center gap-2">
+        <Avatar>
+          <AvatarImage src={sender.avatar ?? ""} />
+          <AvatarFallback>
+            <Logo class="size-6" />
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <div class="space-x-1">
+            <span class="hover:underline hover:cursor-pointer">
+              {sender.name}
+            </span>
+            <span class="text-muted-foreground text-sm">
+              {format(props.chat.createdAt, "dd/MM/yyyy HH:mm")}
+            </span>
+          </div>
+          <p>{props.chat.content}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RouteComponent() {
   const loader = Route.useLoaderData();
+  const { sender, receiver } = loader();
+  const userByUUID = { [sender.uuid]: sender, [receiver.uuid]: receiver };
   const queryKey = ["messages", loader().receiver.uuid];
   const query = useQuery(() => ({
     queryKey,
@@ -40,12 +78,12 @@ function RouteComponent() {
       api(`/@me/chats/${loader().receiver.uuid}`, "GET").then(
         PageSchema(ChatSchema).parse
       ),
+    select: (value) => ({
+      ...value,
+      data: [...value.data].reverse(),
+    }),
   }));
   const queryClient = useQueryClient();
-
-  const userByUUID = Object.fromEntries(
-    [loader().receiver, loader().sender].map((user) => [user.uuid, user])
-  );
 
   const mutation = useMutation(() => ({
     mutationKey: ["send"],
@@ -80,7 +118,7 @@ function RouteComponent() {
           const prevTotal = previous?.total ?? 0;
           return {
             ...previous,
-            data: [data.payload, ...prevData],
+            data: [...prevData, data.payload],
             total: prevTotal + 1,
           };
         });
@@ -102,23 +140,27 @@ function RouteComponent() {
         </Avatar>
         <span>{loader().receiver.name}</span>
       </div>
-      <div class="flex-1 flex flex-col-reverse px-2 overflow-auto">
-        <For each={query.data?.data}>
-          {(chat) => {
-            const sender = userByUUID[chat.senderUuid];
+      <div class="flex-1 flex flex-col-reverse overflow-auto">
+        <For each={query.data?.data ?? []}>
+          {(chat, index) => {
+            const nextChat = query.data!.data[index() + 1];
+
             return (
-              <div>
-                <div class="flex items-center gap-2">
-                  <Avatar>
-                    <AvatarImage src={sender.avatar ?? ""} />
-                    <AvatarFallback>
-                      <Logo class="size-6" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>{sender.name}</div>
-                </div>
-                <p>{chat.content}</p>
-              </div>
+              <>
+                <RenderChat
+                  chat={chat}
+                  userByUUID={userByUUID}
+                  hideUser={
+                    nextChat &&
+                    chat.senderUuid === nextChat.senderUuid &&
+                    isSameDay(chat.createdAt, nextChat.createdAt)
+                  }
+                />
+
+                {nextChat && !isSameDay(chat.createdAt, nextChat.createdAt) && (
+                  <Separator />
+                )}
+              </>
             );
           }}
         </For>

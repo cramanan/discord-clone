@@ -19,15 +19,15 @@ export const Route = createFileRoute("/_authed/channels/@me")({
 function RecentRelationships() {
   const context = Route.useRouteContext();
   return (
-    <div class="space-y-4 py-4">
-      <For
-        each={[context().user, context().user, context().user, context().user]}
-      >
+    <div class="py-4">
+      <For each={[context().user]}>
         {(user) => (
           <Link
             to="/channels/@me/$uuid"
             params={{ uuid: user.uuid }}
-            class="flex items-center gap-2"
+            class="flex items-center gap-2 hover:bg-border p-2 rounded-lg"
+            activeOptions={{ exact: true }}
+            activeProps={{ class: "bg-border" }}
           >
             <Avatar>
               <AvatarImage src={user.avatar ?? ""} />
@@ -60,7 +60,7 @@ function RouteComponent() {
               "w-full justify-start"
             )}
             activeOptions={{ exact: true }}
-            activeProps={{ class: "bg-accent" }}
+            activeProps={{ class: "bg-border" }}
           >
             <UserRound /> Amis
           </Link>

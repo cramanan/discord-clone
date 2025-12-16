@@ -29,7 +29,8 @@ func GetUserChatsWithUUID(c *gin.Context) {
 	ctx := c.Request.Context()
 	query := gorm.G[models.Chat](database).
 		Where("sender_uuid = ? AND receiver_uuid = ?", sender.UUID, receiverUUID).
-		Or("receiver_uuid = ? AND sender_uuid = ?", receiverUUID, sender.UUID).Order("created_at DESC")
+		Or("receiver_uuid = ? AND sender_uuid = ?", receiverUUID, sender.UUID).
+		Order("created_at")
 
 	total, err := query.Count(ctx, "*")
 	if err != nil {
