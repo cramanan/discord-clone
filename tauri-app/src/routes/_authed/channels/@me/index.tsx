@@ -2,10 +2,21 @@ import UserRound from "lucide-solid/icons/user-round";
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import { Tabs, TabsTrigger } from "~/components/ui/tabs";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
-import { createSignal, For, Match, Switch } from "solid-js";
+import { createSignal, For, Match, Show, Switch } from "solid-js";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Logo } from "~/components/logo";
 import { Separator } from "~/components/ui/separator";
+import {
+  Command,
+  CommandEmpty,
+  CommandItem,
+  CommandList,
+} from "~/components/ui/command";
+import { useInfiniteQuery } from "@tanstack/solid-query";
+import { getNextPageParam } from "~/lib/utils";
+import { api } from "~/actions/api";
+import { PageSchema, UserSchema } from "~/types/schemas";
+import { createDebouncedValue } from "@tanstack/solid-pacer";
 
 export const Route = createFileRoute("/_authed/channels/@me/")({
   component: RouteComponent,
@@ -53,6 +64,21 @@ function All() {
 }
 
 function Add() {
+  const [query, setQuery] = createSignal("");
+  const [debouncedQuery] = createDebouncedValue(query, {
+    wait: 500,
+  });
+  const usersQuery = useInfiniteQuery(() => ({
+    queryKey: ["users", debouncedQuery()],
+    enabled: !!debouncedQuery(),
+    queryFn: async () => {
+      const data = await api(`/users?query=${query()}`, "GET");
+      return PageSchema(UserSchema).parse(data);
+    },
+    initialPageParam: 1,
+    getNextPageParam,
+  }));
+  const users = () => usersQuery.data?.pages.flatMap((page) => page.data) ?? [];
   return (
     <div>
       <div class="p-6">
@@ -62,9 +88,26 @@ function Add() {
           Discord-Clone.
         </div>
         <form>
-          <TextField>
-            <TextFieldInput class="bg-input" placeholder="Rechercher" />
-          </TextField>
+          <Command>
+            <TextField value={query()} onChange={setQuery}>
+              <TextFieldInput class="bg-input" placeholder="Rechercher" />
+            </TextField>
+
+            <CommandList class="bg-input">
+              <Show when={usersQuery.isFetched}>
+                <For
+                  each={users()}
+                  fallback={<CommandEmpty>No results found.</CommandEmpty>}
+                >
+                  {(user) => (
+                    <CommandItem value={user.uuid} onSelect={console.log}>
+                      {user.name}
+                    </CommandItem>
+                  )}
+                </For>
+              </Show>
+            </CommandList>
+          </Command>
         </form>
       </div>
       <Separator />

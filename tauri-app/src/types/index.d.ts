@@ -14,3 +14,5 @@ export type User = z.infer<typeof UserSchema>;
 export type Chat = z.infer<typeof ChatSchema>;
 
 export type Event = z.infer<typeof EventSchema>;
+
+type Page<T> = z.infer<ReturnType<typeof PageSchema>>;

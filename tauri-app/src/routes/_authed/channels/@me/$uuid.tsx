@@ -23,6 +23,7 @@ import { format, isSameDay } from "date-fns";
 import { Chat, User } from "~/types";
 import { Separator } from "~/components/ui/separator";
 import { createIntersectionObserver } from "@solid-primitives/intersection-observer";
+import { getNextPageParam } from "~/lib/utils";
 
 export const Route = createFileRoute("/_authed/channels/@me/$uuid")({
   component: RouteComponent,
@@ -87,10 +88,7 @@ function RouteComponent() {
         "GET"
       ).then(PageSchema(ChatSchema).parse),
 
-    getNextPageParam: (lastPage) =>
-      lastPage.page < Math.ceil(lastPage.total / lastPage.perPage)
-        ? lastPage.page + 1
-        : undefined,
+    getNextPageParam,
   }));
   let parentRef!: HTMLDivElement;
   createIntersectionObserver(
