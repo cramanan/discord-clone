@@ -1,5 +1,9 @@
 import { createForm } from "@tanstack/solid-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/solid-query";
 import { createFileRoute, redirect } from "@tanstack/solid-router";
 import { invoke } from "@tauri-apps/api/core";
 import { For, onCleanup, onMount } from "solid-js";
@@ -18,6 +22,7 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { format, isSameDay } from "date-fns";
 import { Chat, User } from "~/types";
 import { Separator } from "~/components/ui/separator";
+import { createIntersectionObserver } from "@solid-primitives/intersection-observer";
 
 export const Route = createFileRoute("/_authed/channels/@me/$uuid")({
   component: RouteComponent,
@@ -71,19 +76,58 @@ function RouteComponent() {
   const loader = Route.useLoaderData();
   const { sender, receiver } = loader();
   const userByUUID = { [sender.uuid]: sender, [receiver.uuid]: receiver };
-  const queryKey = ["messages", loader().receiver.uuid];
-  const query = useQuery(() => ({
+  const queryKey = ["messages", receiver.uuid];
+
+  const query = useInfiniteQuery(() => ({
     queryKey,
-    queryFn: () =>
-      api(`/@me/chats/${loader().receiver.uuid}`, "GET").then(
-        PageSchema(ChatSchema).parse
-      ),
-    select: (value) => ({
-      ...value,
-      data: [...value.data].reverse(),
-    }),
+    initialPageParam: 1,
+    queryFn: ({ pageParam = 1 }) =>
+      api(
+        `/@me/chats/${receiver.uuid}?page=${pageParam}&per-page=50&sort-order=desc`,
+        "GET"
+      ).then(PageSchema(ChatSchema).parse),
+
+    getNextPageParam: (lastPage) =>
+      lastPage.page < Math.ceil(lastPage.total / lastPage.perPage)
+        ? lastPage.page + 1
+        : undefined,
   }));
+  let parentRef!: HTMLDivElement;
+  createIntersectionObserver(
+    () => [parentRef],
+    ([entry]) => {
+      console.log(entry.isIntersecting, query.hasNextPage);
+
+      if (
+        entry.isIntersecting &&
+        query.hasNextPage &&
+        !query.isFetchingNextPage
+      ) {
+        query.fetchNextPage();
+      }
+    }
+  );
+
+  const messages = () => query.data?.pages.flatMap((page) => page.data) ?? [];
   const queryClient = useQueryClient();
+
+  const updateClient = (chat: Chat) => {
+    queryClient.setQueryData<typeof query.data>(queryKey, (previous) => {
+      if (!previous) return previous;
+      const firstPage = previous.pages[0];
+      return {
+        ...previous,
+        pages: [
+          {
+            ...firstPage,
+            data: [chat, ...firstPage.data],
+            total: firstPage.total + 1,
+          },
+          ...previous.pages.slice(1),
+        ],
+      };
+    });
+  };
 
   const mutation = useMutation(() => ({
     mutationKey: ["send"],
@@ -91,10 +135,21 @@ function RouteComponent() {
       await invoke("ws_send", {
         value: {
           type: "MESSAGE",
-          payload: { receiverUuid: loader().receiver.uuid, content },
+          payload: { receiverUuid: receiver.uuid, content },
         },
       }),
-    onSuccess: () => form.reset(),
+    onSuccess: () => {
+      const chat: Chat = {
+        ...form.state.values,
+        id: 0,
+        senderUuid: sender.uuid,
+        receiverUuid: receiver.uuid,
+        createdAt: new Date().toUTCString(),
+        updatedAt: null,
+      };
+      updateClient(chat);
+      form.reset();
+    },
     onError: console.error,
   }));
 
@@ -113,15 +168,7 @@ function RouteComponent() {
         const { data, success, error } = EventSchema.safeParse(payload);
         if (error) console.log(error);
         if (!success || data.type !== "MESSAGE") return;
-        queryClient.setQueryData<typeof query.data>(queryKey, (previous) => {
-          const prevData = previous?.data ?? [];
-          const prevTotal = previous?.total ?? 0;
-          return {
-            ...previous,
-            data: [...prevData, data.payload],
-            total: prevTotal + 1,
-          };
-        });
+        updateClient(data.payload);
       });
     } catch (error) {
       console.log(error);
@@ -141,9 +188,9 @@ function RouteComponent() {
         <span>{loader().receiver.name}</span>
       </div>
       <div class="flex-1 flex flex-col-reverse overflow-auto">
-        <For each={query.data?.data ?? []}>
+        <For each={messages()}>
           {(chat, index) => {
-            const nextChat = query.data!.data[index() + 1];
+            const nextChat = messages()[index() + 1];
 
             return (
               <>
@@ -164,6 +211,7 @@ function RouteComponent() {
             );
           }}
         </For>
+        <div ref={parentRef}></div>
       </div>
       <form.Field name="content">
         {(field) => (

@@ -15,6 +15,8 @@ export const PageSchema = <T extends z.ZodType>(zodType: T) =>
   z.object({
     data: z.array(zodType),
     total: z.number(),
+    page: z.number(),
+    perPage: z.number(),
   });
 
 export const ChatSchema = z.object({

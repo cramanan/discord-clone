@@ -1,12 +1,11 @@
 import UserRound from "lucide-solid/icons/user-round";
 import { createFileRoute, Link } from "@tanstack/solid-router";
 import { Tabs, TabsTrigger } from "~/components/ui/tabs";
-import { buttonVariants } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import { createSignal, For, Match, Switch } from "solid-js";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Logo } from "~/components/logo";
+import { Separator } from "~/components/ui/separator";
 
 export const Route = createFileRoute("/_authed/channels/@me/")({
   component: RouteComponent,
@@ -48,8 +47,34 @@ function Online() {
   );
 }
 
+function All() {
+  // TODO: REPLACE WITH ALL RELATIONSHIPS
+  return <Online />;
+}
+
+function Add() {
+  return (
+    <div>
+      <div class="p-6">
+        <h1 class="text-lg font-bold">Ajouter</h1>
+        <div class="text-sm text-muted-foreground mb-6">
+          Tu peux ajouter des amis grâce à leurs noms d'utilisateur
+          Discord-Clone.
+        </div>
+        <form>
+          <TextField>
+            <TextFieldInput class="bg-input" placeholder="Rechercher" />
+          </TextField>
+        </form>
+      </div>
+      <Separator />
+    </div>
+  );
+}
+
 function RouteComponent() {
-  const [page, setPage] = createSignal("online");
+  const [page, setPage] = createSignal<"online" | "all" | "add">("add");
+
   return (
     <div class="border-t border-accent">
       <div class="border-b border-accent h-12 px-6 p-2 flex items-center gap-4">
@@ -66,10 +91,7 @@ function RouteComponent() {
           </TabsTrigger>
           <TabsTrigger
             value="add"
-            class={cn(
-              buttonVariants(),
-              "data-selected:bg-primary/20 data-selected:text-primary py-1.5"
-            )}
+            class="bg-primary data-selected:bg-primary/20 data-selected:text-primary py-1.5"
           >
             Ajouter
           </TabsTrigger>
@@ -79,15 +101,13 @@ function RouteComponent() {
         <Match when={page() === "online"}>
           <Online />
         </Match>
+        <Match when={page() === "all"}>
+          <All />
+        </Match>
+        <Match when={page() === "add"}>
+          <Add />
+        </Match>
       </Switch>
-      {/* Discuss with yourself{" "}
-      <Link
-        class="underline"
-        to="/channels/@me/$uuid"
-        params={{ uuid: context().user.uuid }}
-      >
-        here
-      </Link> */}
     </div>
   );
 }

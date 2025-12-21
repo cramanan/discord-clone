@@ -11,6 +11,9 @@ importers:
       '@kobalte/core':
         specifier: ^0.13.11
         version: 0.13.11(solid-js@1.9.10)
+      '@solid-primitives/intersection-observer':
+        specifier: ^2.2.2
+        version: 2.2.2(solid-js@1.9.10)
       '@tailwindcss/vite':
         specifier: ^4.1.17
         version: 4.1.17(vite@6.4.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6))
@@ -557,6 +560,11 @@ packages:
 
   '@solid-primitives/event-listener@2.4.3':
     resolution: {integrity: sha512-h4VqkYFv6Gf+L7SQj+Y6puigL/5DIi7x5q07VZET7AWcS+9/G3WfIE9WheniHWJs51OEkRB43w6lDys5YeFceg==}
+    peerDependencies:
+      solid-js: ^1.6.12
+
+  '@solid-primitives/intersection-observer@2.2.2':
+    resolution: {integrity: sha512-5Vak/eRuCKAQis+YaPsP4KysPc+sQGL2ew8kvTOMxKVOTJcICkxznRrlFEBbBk0UsiUQlm9CcVQtJwocKWNXcw==}
     peerDependencies:
       solid-js: ^1.6.12
 
@@ -1962,6 +1970,11 @@ snapshots:
       solid-js: 1.9.10
 
   '@solid-primitives/event-listener@2.4.3(solid-js@1.9.10)':
+    dependencies:
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
+      solid-js: 1.9.10
+
+  '@solid-primitives/intersection-observer@2.2.2(solid-js@1.9.10)':
     dependencies:
       '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
       solid-js: 1.9.10

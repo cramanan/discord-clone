@@ -89,7 +89,7 @@ function RouteComponent() {
                   id={field().name}
                   name={field().name}
                   type="text"
-                  placeholder="John doe"
+                  placeholder="John Doe"
                 />
                 <For each={field().state.meta.errors}>
                   {(error) => (

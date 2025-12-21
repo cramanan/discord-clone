@@ -13,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "@kobalte/core": "^0.13.11",
+    "@solid-primitives/intersection-observer": "^2.2.2",
     "@tailwindcss/vite": "^4.1.17",
     "@tanstack/solid-form": "^1.26.0",
     "@tanstack/solid-query": "^5.90.13",

@@ -59,6 +59,7 @@ func main() {
 		router.GET("/auth/user", middlewares.AuthMiddleware(), auth.Authenticate)
 		router.POST("/auth/logout", auth.Logout)
 
+		router.GET("/users/" /*middlewares.AuthMiddleware(),*/, users.GetUsers)
 		router.GET("/users/:uuid", middlewares.AuthMiddleware(), users.GetUserByUuid)
 
 		router.GET("/@me/chats/:uuid", middlewares.AuthMiddleware(), user.GetUserChatsWithUUID)
