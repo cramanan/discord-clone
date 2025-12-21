@@ -2,7 +2,8 @@ use crate::{constants, errors::AppError};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use tauri::{
-    async_runtime::JoinHandle, webview::Cookie, AppHandle, Emitter, Runtime, State, Url, Webview,
+    async_runtime::JoinHandle, http::StatusCode, webview::Cookie, AppHandle, Emitter, Runtime,
+    State, Url, Webview,
 };
 use tauri_plugin_http::reqwest;
 use tokio::sync::{broadcast, Mutex};
@@ -11,24 +12,24 @@ use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Method {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-    PATCH,
-    OPTIONS,
+    Get,
+    Post,
+    Put,
+    Delete,
+    Patch,
+    Options,
 }
 
 impl From<Method> for tauri::http::Method {
     fn from(value: Method) -> Self {
-        use tauri::http::Method as HttpMethod;
+        use tauri::http::Method as HTTP;
         match value {
-            Method::GET => HttpMethod::GET,
-            Method::POST => HttpMethod::POST,
-            Method::PUT => HttpMethod::PUT,
-            Method::DELETE => HttpMethod::DELETE,
-            Method::PATCH => HttpMethod::PATCH,
-            Method::OPTIONS => HttpMethod::OPTIONS,
+            Method::Get => HTTP::GET,
+            Method::Post => HTTP::POST,
+            Method::Put => HTTP::PUT,
+            Method::Delete => HTTP::DELETE,
+            Method::Patch => HTTP::PATCH,
+            Method::Options => HTTP::OPTIONS,
         }
     }
 }
@@ -64,18 +65,19 @@ pub async fn api<R: Runtime>(
     for cookie in response.cookies() {
         let webview_cookie = Cookie::build((cookie.name(), cookie.value()))
             .path("/")
-            // .domain("localhost")
             .permanent()
             .secure(false)
             .http_only(true)
-            // .same_site(webview::cookie::SameSite::Lax)
             .build();
 
         // Maybe propagate error ?
         _ = webview.set_cookie(webview_cookie);
     }
 
-    response.json().await.map_err(AppError::from)
+    match response.status() {
+        StatusCode::OK => Ok(response.json().await?),
+        _ => Err(response.json::<serde_json::Value>().await?.into()),
+    }
 }
 
 #[derive(Debug)]

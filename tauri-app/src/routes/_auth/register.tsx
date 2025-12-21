@@ -188,7 +188,7 @@ function RouteComponent() {
             )}
           </form.Field>
           <Button type="submit" class="w-full">
-            Login
+            Register
           </Button>
           <Separator />
           <p>

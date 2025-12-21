@@ -12,11 +12,12 @@ import {
   CommandItem,
   CommandList,
 } from "~/components/ui/command";
-import { useInfiniteQuery } from "@tanstack/solid-query";
+import { useInfiniteQuery, useMutation } from "@tanstack/solid-query";
 import { getNextPageParam } from "~/lib/utils";
 import { api } from "~/actions/api";
-import { PageSchema, UserSchema } from "~/types/schemas";
+import { PageSchema, RelationshipSchema, UserSchema } from "~/types/schemas";
 import { createDebouncedValue } from "@tanstack/solid-pacer";
+import { createIntersectionObserver } from "@solid-primitives/intersection-observer";
 
 export const Route = createFileRoute("/_authed/channels/@me/")({
   component: RouteComponent,
@@ -65,20 +66,46 @@ function All() {
 
 function Add() {
   const [query, setQuery] = createSignal("");
-  const [debouncedQuery] = createDebouncedValue(query, {
-    wait: 500,
-  });
+  const [debouncedQuery] = createDebouncedValue(query, { wait: 500 });
   const usersQuery = useInfiniteQuery(() => ({
     queryKey: ["users", debouncedQuery()],
     enabled: !!debouncedQuery(),
-    queryFn: async () => {
-      const data = await api(`/users?query=${query()}`, "GET");
-      return PageSchema(UserSchema).parse(data);
-    },
+    queryFn: ({ pageParam = 1 }) =>
+      api(`/users?query=${query()}&page=${pageParam}`, "GET").then(
+        PageSchema(UserSchema).parse
+      ),
     initialPageParam: 1,
     getNextPageParam,
   }));
   const users = () => usersQuery.data?.pages.flatMap((page) => page.data) ?? [];
+
+  const Sentinel = () => {
+    let ref!: HTMLDivElement;
+    createIntersectionObserver(
+      () => [ref],
+      ([entry]) => {
+        if (
+          entry.isIntersecting &&
+          usersQuery.hasNextPage &&
+          !usersQuery.isFetchingNextPage
+        ) {
+          usersQuery.fetchNextPage();
+        }
+      }
+    );
+    return <div ref={ref} />;
+  };
+
+  const mutation = useMutation(() => ({
+    mutationKey: ["relationships"],
+    mutationFn: (addresseeUuid: string) =>
+      api("/relationships/", "POST", { addresseeUuid }).then(
+        RelationshipSchema.parse
+      ),
+    onSuccess: () => setQuery(""),
+    onError: console.error,
+  }));
+
   return (
     <div>
       <div class="p-6">
@@ -100,11 +127,12 @@ function Add() {
                   fallback={<CommandEmpty>No results found.</CommandEmpty>}
                 >
                   {(user) => (
-                    <CommandItem value={user.uuid} onSelect={console.log}>
+                    <CommandItem value={user.uuid} onSelect={mutation.mutate}>
                       {user.name}
                     </CommandItem>
                   )}
                 </For>
+                <Sentinel />
               </Show>
             </CommandList>
           </Command>
@@ -116,7 +144,7 @@ function Add() {
 }
 
 function RouteComponent() {
-  const [page, setPage] = createSignal<"online" | "all" | "add">("add");
+  const [page, setPage] = createSignal<"online" | "all" | "add">("online");
 
   return (
     <div class="border-t border-accent">

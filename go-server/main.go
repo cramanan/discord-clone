@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go-server/http/controllers/auth"
+	"go-server/http/controllers/relationships"
 	"go-server/http/controllers/user"
 	"go-server/http/controllers/users"
 	"go-server/http/controllers/websocket"
@@ -59,8 +60,9 @@ func main() {
 		router.GET("/auth/user", middlewares.AuthMiddleware(), auth.Authenticate)
 		router.POST("/auth/logout", auth.Logout)
 
-		router.GET("/users/" /*middlewares.AuthMiddleware(),*/, users.GetUsers)
+		router.GET("/users/" /*, middlewares.AuthMiddleware() */, users.GetUsers)
 		router.GET("/users/:uuid", middlewares.AuthMiddleware(), users.GetUserByUuid)
+		router.POST("/relationships/", middlewares.AuthMiddleware(), relationships.PostRelationship)
 
 		router.GET("/@me/chats/:uuid", middlewares.AuthMiddleware(), user.GetUserChatsWithUUID)
 		router.GET("/ws", middlewares.AuthMiddleware(), websocket.WebSocket)

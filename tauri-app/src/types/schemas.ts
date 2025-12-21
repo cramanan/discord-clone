@@ -32,3 +32,12 @@ export const EventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("MESSAGE"), payload: ChatSchema }),
   z.object({ type: z.literal("OTHER") }),
 ]);
+
+export const RelationshipSchema = z.object({
+  id: z.number(),
+  requesterUuid: z.uuid(),
+  addresseeUuid: z.uuid(),
+  isPending: z.boolean(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime().nullable(),
+});

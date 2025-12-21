@@ -13,8 +13,8 @@ type Chat struct {
 	SenderUUID   uuid.UUID  `json:"senderUuid"`
 	ReceiverUUID uuid.UUID  `json:"receiverUuid"`
 	Content      string     `json:"content"`
-	CreatedAt    time.Time  `json:"createdAt"`
-	UpdatedAt    *time.Time `json:"updatedAt"`
+	CreatedAt    time.Time  `gorm:"autoCreateTime;not null" json:"createdAt"`
+	UpdatedAt    *time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
 }
 
 func (chat *Chat) BeforeSave(tx *gorm.DB) error {
