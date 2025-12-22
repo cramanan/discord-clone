@@ -2,6 +2,7 @@ import {
   Accessor,
   createContext,
   createSignal,
+  For,
   onMount,
   ParentProps,
   useContext,
@@ -22,17 +23,63 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Logo } from "~/components/logo";
 import Mic from "lucide-solid/icons/mic";
 import Headset from "lucide-solid/icons/headset";
+import Check from "lucide-solid/icons/check";
 import SettingsModal from "../modals/settings-modal";
 import { invoke } from "@tauri-apps/api/core";
+import { useInfiniteQuery } from "@tanstack/solid-query";
+import { getNextPageParam } from "~/lib/utils";
+import { api } from "~/actions/api";
+import { PageSchema, RelationshipSchema, UserSchema } from "~/types/schemas";
+
+function InboxContent() {
+  const query = useInfiniteQuery(() => ({
+    queryKey: ["relationships", "is-pending", true],
+    queryFn: () =>
+      api(`/@me/relationships?is-pending=true`, "GET").then(
+        PageSchema(RelationshipSchema.extend({ requester: UserSchema })).parse
+      ),
+    initialPageParam: 1,
+    getNextPageParam,
+  }));
+
+  const relationships = () =>
+    query.data?.pages.flatMap((page) => page.data) ?? [];
+
+  return (
+    <ul>
+      <For each={relationships()}>
+        {(relationship) => (
+          <li class="flex items-center gap-4">
+            <Avatar>
+              <AvatarImage src={relationship.requester.avatar ?? ""} />
+              <AvatarFallback>
+                <Logo class="size-6" />
+              </AvatarFallback>
+            </Avatar>
+            <span class="w-full">{relationship.requester.name}</span>
+            <div class="flex gap-2">
+              <Button variant="outline">
+                <Check />
+              </Button>
+              <Button variant="destructive">
+                <X />
+              </Button>
+            </div>
+          </li>
+        )}
+      </For>
+    </ul>
+  );
+}
 
 function InboxModal() {
   return (
-    <Popover>
+    <Popover modal>
       <PopoverTrigger>
         <Inbox class="size-4" />
       </PopoverTrigger>
       <PopoverContent>
-        <Link to="/channels/@me">Inbox</Link>
+        <InboxContent />
       </PopoverContent>
     </Popover>
   );

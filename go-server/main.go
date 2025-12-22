@@ -64,8 +64,9 @@ func main() {
 		router.GET("/users/:uuid", middlewares.AuthMiddleware(), users.GetUserByUuid)
 		router.POST("/relationships/", middlewares.AuthMiddleware(), relationships.PostRelationship)
 
-		router.GET("/@me/chats/:uuid", middlewares.AuthMiddleware(), user.GetUserChatsWithUUID)
 		router.GET("/ws", middlewares.AuthMiddleware(), websocket.WebSocket)
+		router.GET("/@me/chats/:uuid", middlewares.AuthMiddleware(), user.GetUserChatsWithUUID)
+		router.GET("/@me/relationships/", middlewares.AuthMiddleware(), user.GetRelationships)
 
 		fmt.Println("Server is running. Press Ctrl+C to stop.")
 		router.Run()

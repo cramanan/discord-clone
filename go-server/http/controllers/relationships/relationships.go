@@ -30,6 +30,7 @@ func PostRelationship(c *gin.Context) {
 	relationship := &models.Relationship{
 		RequesterUUID: requester.UUID,
 		AddresseeUUID: payload.AddresseeUUID,
+		IsPending:     true,
 	}
 	if err = gorm.G[models.Relationship](shared.Database()).
 		Create(c.Request.Context(), relationship); err != nil {

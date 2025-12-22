@@ -50,20 +50,19 @@ func GetUsers(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	baseQuery := gorm.G[models.User](shared.Database())
 
-	total, err := baseQuery.Count(ctx, "*")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	query := baseQuery.
+	query := gorm.G[models.User](shared.Database()).
 		Offset((params.Page - 1) * params.PerPage).
 		Limit(params.PerPage)
 
 	if params.Query != "" {
 		query = query.Where("LOWER(name) LIKE CONCAT('%', LOWER(?), '%')", params.Query)
+	}
+
+	total, err := query.Count(ctx, "*")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	users, err := query.Find(ctx)
